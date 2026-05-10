@@ -42,6 +42,7 @@ export default function Dashboard() {
   const [events, setEvents] = useState<Event[]>([]);
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [realtimeOk, setRealtimeOk] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const monitorsRef = useRef<Monitor[]>([]);
   monitorsRef.current = monitors;
 
@@ -55,13 +56,18 @@ export default function Dashboard() {
   }
   async function refreshSettings() {
     const r = await fetch("/api/settings").then((r) => r.json());
-    setSettings(r.settings || {});
+    const s = r.settings || {};
+    setSettings(s);
+    if (showOnboarding === null) {
+      setShowOnboarding(s.onboarding_completed !== "1");
+    }
   }
 
   useEffect(() => {
     refreshMonitors();
     refreshEvents();
     refreshSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Realtime subscriptions — events + monitors
@@ -139,6 +145,23 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen">
+      {showOnboarding && (
+        <Onboarding
+          onDone={() => {
+            setShowOnboarding(false);
+            refreshSettings();
+          }}
+          onSkip={async () => {
+            await fetch("/api/settings", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ onboarding_completed: "1" }),
+            });
+            setShowOnboarding(false);
+            refreshSettings();
+          }}
+        />
+      )}
       <header className="border-b border-border bg-panel/60 backdrop-blur sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">

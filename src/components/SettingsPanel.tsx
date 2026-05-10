@@ -123,6 +123,59 @@ export default function SettingsPanel({
 
       <hr className="my-4 border-border" />
 
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="text-xs uppercase tracking-wider text-muted">
+            Brand context for ad copy
+          </div>
+          <button
+            onClick={async () => {
+              await fetch("/api/settings", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ onboarding_completed: "0" }),
+              });
+              onChange();
+              location.reload();
+            }}
+            className="text-xs text-accent hover:underline"
+          >
+            Re-run onboarding
+          </button>
+        </div>
+        {settings.brand_description ? (
+          <div className="text-xs text-gray-300 bg-bg border border-border rounded-md px-3 py-2 space-y-1">
+            {settings.brand_tagline && (
+              <div>
+                <span className="text-muted">Tagline:</span>{" "}
+                {settings.brand_tagline}
+              </div>
+            )}
+            <div>
+              <span className="text-muted">About:</span>{" "}
+              {settings.brand_description}
+            </div>
+            {settings.brand_voice && (
+              <div>
+                <span className="text-muted">Voice:</span> {settings.brand_voice}
+              </div>
+            )}
+            {settings.brand_value_props && (
+              <div>
+                <span className="text-muted">Props:</span>{" "}
+                {settings.brand_value_props.split("|").join(" · ")}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-xs text-muted italic">
+            No brand context yet — re-run onboarding to populate.
+          </div>
+        )}
+      </div>
+
+      <hr className="my-4 border-border" />
+
       <div className="space-y-1">
         <div className="text-xs uppercase tracking-wider text-muted mb-1">
           Actions on OOS
