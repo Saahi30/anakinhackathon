@@ -37,6 +37,15 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   whatsapp_enabled: "0",
   ads_bid_surge_enabled: "0",
   brand_name: "Your Brand",
+  brand_website: "",
+  brand_tagline: "",
+  brand_description: "",
+  brand_voice: "",
+  brand_categories: "",
+  brand_value_props: "",
+  brand_target_audience: "",
+  brand_source_url: "",
+  onboarding_completed: "0",
   poll_interval_seconds: "30",
 };
 

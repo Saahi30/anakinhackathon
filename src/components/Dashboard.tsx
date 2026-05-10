@@ -6,6 +6,7 @@ import EventFeed from "./EventFeed";
 import SettingsPanel from "./SettingsPanel";
 import AddMonitor from "./AddMonitor";
 import StatsBar from "./StatsBar";
+import Onboarding from "./Onboarding";
 import { supabaseBrowser } from "@/lib/supabase";
 
 export type Monitor = {

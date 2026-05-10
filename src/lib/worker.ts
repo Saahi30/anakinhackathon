@@ -133,11 +133,30 @@ export async function fireOOSAlert(
 
   let adCopy: string | null = null;
   if (autoAd) {
+    const [tagline, description, voice, valuePropsRaw, audience] =
+      await Promise.all([
+        getSettingAsync("brand_tagline"),
+        getSettingAsync("brand_description"),
+        getSettingAsync("brand_voice"),
+        getSettingAsync("brand_value_props"),
+        getSettingAsync("brand_target_audience"),
+      ]);
+    const valueProps = valuePropsRaw
+      ? valuePropsRaw
+          .split("|")
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : [];
     adCopy = await generateAdCopy({
       brand,
       competitor,
       platform: m.platform,
       productHint: m.label,
+      brandTagline: tagline,
+      brandDescription: description,
+      brandVoice: voice,
+      brandValueProps: valueProps,
+      brandTargetAudience: audience,
     });
   }
 
