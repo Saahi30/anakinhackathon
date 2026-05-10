@@ -29,25 +29,31 @@ export default function SparklinesPanel({
       label: "Strikes / day",
       value: strikesSeries[strikesSeries.length - 1].toString(),
       delta: "+18%",
-      tone: "good" as const,
       values: strikesSeries,
-      color: "#10b981",
+      stroke: "#1a3a3a",
+      surface: "bg-card",
+      ink: "text-ink",
+      sub: "text-muted",
     },
     {
       label: "Capture rate",
       value: captureSeries[captureSeries.length - 1] + "%",
       delta: "+4.2%",
-      tone: "good" as const,
       values: captureSeries,
-      color: "#a78bfa",
+      stroke: "#0a0a0a",
+      surface: "bg-brand-lavender",
+      ink: "text-ink",
+      sub: "text-ink/70",
     },
     {
       label: "Avg response",
       value: responseSeries[responseSeries.length - 1] + "s",
       delta: "−3s",
-      tone: "good" as const,
       values: responseSeries,
-      color: "#f59e0b",
+      stroke: "#1a3a3a",
+      surface: "bg-brand-peach",
+      ink: "text-ink",
+      sub: "text-ink/70",
     },
     {
       label: "Revenue captured",
@@ -55,41 +61,58 @@ export default function SparklinesPanel({
         "₹" +
         (revenueSeries[revenueSeries.length - 1] * 7).toLocaleString("en-IN"),
       delta: "+₹12.4k",
-      tone: "good" as const,
       values: revenueSeries,
-      color: "#22d3ee",
+      stroke: "#ffffff",
+      surface: "bg-brand-teal",
+      ink: "text-white",
+      sub: "text-white/70",
     },
   ];
 
   return (
-    <section className="rounded-xl border border-border bg-panel">
-      <div className="px-5 py-3 border-b border-border flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
-          Last 14 days
-        </h2>
-        <span className="text-[10px] px-1.5 py-0.5 rounded border border-violet-500/30 text-violet-300">
-          MOCKED
+    <section>
+      <div className="flex items-end justify-between mb-4">
+        <div>
+          <div className="text-[11px] uppercase tracking-[0.16em] text-muted font-semibold">
+            Last 14 days
+          </div>
+          <h2 className="font-display text-3xl tracking-display text-ink mt-1">
+            Strike pulse
+          </h2>
+        </div>
+        <span className="text-[10px] uppercase tracking-[0.14em] px-2.5 py-1 rounded-full bg-soft text-muted border border-hairline">
+          Mocked
         </span>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4">
-        {stats.map((s, i) => (
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {stats.map((s) => (
           <div
             key={s.label}
-            className={`px-5 py-4 ${i < stats.length - 1 ? "md:border-r md:border-border" : ""} ${i % 2 === 0 ? "border-r border-border md:border-r" : ""} ${i < 2 ? "border-b border-border md:border-b-0" : ""}`}
+            className={`rounded-clay ${s.surface} px-5 py-5 shadow-clay flex flex-col justify-between min-h-[160px]`}
           >
-            <div className="text-xs text-muted">{s.label}</div>
-            <div className="flex items-baseline justify-between mt-1">
-              <div className="text-2xl font-semibold tabular-nums">
-                {s.value}
+            <div>
+              <div
+                className={`text-[11px] uppercase tracking-[0.14em] font-semibold ${s.sub}`}
+              >
+                {s.label}
               </div>
-              <span className="text-xs text-accent">{s.delta}</span>
+              <div className="flex items-baseline justify-between mt-2">
+                <div
+                  className={`font-display text-3xl tracking-display tabular-nums ${s.ink}`}
+                >
+                  {s.value}
+                </div>
+                <span className={`text-xs font-medium ${s.sub}`}>
+                  {s.delta}
+                </span>
+              </div>
             </div>
-            <div className="mt-2">
+            <div className="-mx-1 mt-4">
               <Sparkline
                 values={s.values}
-                color={s.color}
-                width={160}
-                height={36}
+                color={s.stroke}
+                width={200}
+                height={40}
               />
             </div>
           </div>

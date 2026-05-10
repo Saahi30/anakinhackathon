@@ -113,10 +113,15 @@ export default function SettingsPanel({
   );
 
   return (
-    <section className="rounded-xl border border-border bg-panel p-5">
-      <h2 className="text-sm font-semibold uppercase tracking-wider text-muted mb-4">
-        Settings
-      </h2>
+    <section className="rounded-clay bg-panel border border-hairline p-7 shadow-clay">
+      <div className="mb-5">
+        <div className="text-[11px] uppercase tracking-[0.16em] text-muted font-semibold">
+          Configuration
+        </div>
+        <h2 className="font-display text-2xl tracking-display text-ink mt-0.5">
+          Settings
+        </h2>
+      </div>
 
       <div className="space-y-3">
         <div>
@@ -126,7 +131,7 @@ export default function SettingsPanel({
             value={brand}
             onChange={(e) => setBrand(e.target.value)}
             placeholder="Your Brand"
-            className="mt-1 w-full bg-bg border border-border rounded-md px-3 py-2 text-sm focus:border-accent focus:outline-none"
+            className="mt-1 w-full bg-canvas border border-hairline rounded-2xl px-4 py-2.5 text-sm text-ink placeholder:text-muted-soft focus:border-ink focus:outline-none transition"
           />
         </div>
 
@@ -137,7 +142,7 @@ export default function SettingsPanel({
             value={webhook}
             onChange={(e) => setWebhook(e.target.value)}
             placeholder="https://hooks.slack.com/services/..."
-            className="mt-1 w-full bg-bg border border-border rounded-md px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none"
+            className="mt-1 w-full bg-canvas border border-hairline rounded-2xl px-4 py-2.5 text-sm font-mono text-ink placeholder:text-muted-soft focus:border-ink focus:outline-none transition"
           />
         </div>
 
@@ -151,7 +156,7 @@ export default function SettingsPanel({
             max={3600}
             value={interval}
             onChange={(e) => setInterval(e.target.value)}
-            className="mt-1 w-full bg-bg border border-border rounded-md px-3 py-2 text-sm focus:border-accent focus:outline-none"
+            className="mt-1 w-full bg-canvas border border-hairline rounded-2xl px-4 py-2.5 text-sm text-ink focus:border-ink focus:outline-none transition"
           />
         </div>
       </div>
@@ -284,12 +289,12 @@ export default function SettingsPanel({
 
       <button
         onClick={saveAll}
-        className="mt-4 w-full px-3 py-2 text-sm rounded-md bg-accent text-black font-medium hover:bg-accent/90"
+        className="mt-5 w-full px-4 py-3 text-sm rounded-full bg-ink text-white font-medium hover:bg-ink/90 transition"
       >
         Save settings
       </button>
       {savedAt && (
-        <div className="text-xs text-accent text-center mt-2">
+        <div className="text-xs text-brand-teal text-center mt-2 font-medium">
           Saved ✓ {new Date(savedAt).toLocaleTimeString()}
         </div>
       )}

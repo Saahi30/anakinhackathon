@@ -132,43 +132,45 @@ export default function StrikeReplay({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-[#070809]/95 backdrop-blur-md overflow-y-auto">
-      <div className="min-h-screen p-6">
+    <div className="fixed inset-0 z-[60] bg-ink/30 backdrop-blur-md overflow-y-auto">
+      <div className="min-h-screen p-6 bg-canvas/95">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-8">
             <div>
-              <div className="text-[10px] uppercase tracking-widest text-violet-300 font-bold">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-brand-teal font-bold">
                 STRIKE REPLAY
               </div>
-              <div className="text-xs text-muted">
+              <div className="text-xs text-muted mt-0.5">
                 Esc to close · space to play/pause
               </div>
             </div>
             <button
               onClick={onClose}
-              className="text-xs text-muted hover:text-gray-200 px-3 py-1.5 rounded border border-border"
+              className="text-xs text-ink px-4 py-1.5 rounded-full bg-soft hover:bg-strong border border-hairline"
             >
               Close ✕
             </button>
           </div>
 
-          <div className="rounded-2xl border border-border bg-panel p-6 mb-6">
+          <div className="rounded-clay bg-brand-lavender p-8 mb-6 shadow-clay">
             <div className="flex items-end justify-between gap-4 flex-wrap">
               <div>
-                <div className="text-xs text-muted">
+                <div className="text-[11px] uppercase tracking-[0.16em] text-ink/70 font-semibold">
                   {strike.platform.toUpperCase()} ·{" "}
                   {new Date(strike.startedAt).toLocaleString()}
                 </div>
-                <h2 className="text-2xl font-semibold text-gray-100">
+                <h2 className="font-display text-4xl tracking-display text-ink mt-2">
                   {strike.competitor}
                 </h2>
               </div>
               <div className="text-right">
-                <div className="text-xs text-muted">Replay clock</div>
-                <div className="font-mono text-3xl text-violet-300 tabular-nums">
+                <div className="text-[11px] uppercase tracking-[0.16em] text-ink/70">
+                  Replay clock
+                </div>
+                <div className="font-display text-5xl tracking-display text-ink tabular-nums leading-none mt-1">
                   {fmt(Math.floor(t))}
                 </div>
-                <div className="text-[10px] text-muted">
+                <div className="text-[10px] text-ink/60 mt-1">
                   / {fmt(total)} · {speed}× speed
                 </div>
               </div>
@@ -197,10 +199,8 @@ export default function StrikeReplay({
                     style={{ left: `${(s.t / total) * 100}%` }}
                   >
                     <span
-                      className={`block w-2.5 h-2.5 rounded-full border ${
-                        s.t <= t
-                          ? "bg-violet-400 border-violet-200"
-                          : "bg-bg border-border"
+                      className={`block w-2.5 h-2.5 rounded-full ${
+                        s.t <= t ? "bg-ink" : "bg-canvas border border-ink/20"
                       }`}
                     />
                   </div>
@@ -209,19 +209,19 @@ export default function StrikeReplay({
             </div>
 
             {/* Controls */}
-            <div className="mt-4 flex items-center gap-3">
+            <div className="mt-5 flex items-center gap-2">
               <button
                 onClick={() => {
                   setT(0);
                   setPlaying(true);
                 }}
-                className="text-xs px-3 py-1.5 rounded-md border border-border hover:border-accent/60"
+                className="text-xs px-3.5 py-1.5 rounded-full bg-canvas text-ink hover:bg-white border border-ink/10"
               >
                 ⏮ Restart
               </button>
               <button
                 onClick={() => setPlaying((p) => !p)}
-                className="text-xs px-4 py-1.5 rounded-md bg-violet-500/20 border border-violet-400/40 text-violet-200 hover:bg-violet-500/30"
+                className="text-xs px-4 py-1.5 rounded-full bg-ink text-white hover:bg-ink/90"
               >
                 {playing ? "⏸ Pause" : "▶ Play"}
               </button>
@@ -230,7 +230,7 @@ export default function StrikeReplay({
                   setT(total);
                   setPlaying(false);
                 }}
-                className="text-xs px-3 py-1.5 rounded-md border border-border hover:border-accent/60"
+                className="text-xs px-3.5 py-1.5 rounded-full bg-canvas text-ink hover:bg-white border border-ink/10"
               >
                 ⏭ End
               </button>
@@ -239,10 +239,10 @@ export default function StrikeReplay({
                   <button
                     key={s}
                     onClick={() => setSpeed(s)}
-                    className={`text-[10px] px-2 py-1 rounded ${
+                    className={`text-[10px] px-2.5 py-1 rounded-full ${
                       speed === s
-                        ? "bg-violet-500/20 text-violet-200 border border-violet-400/40"
-                        : "text-muted hover:text-gray-200"
+                        ? "bg-ink text-white"
+                        : "text-ink/60 hover:bg-canvas"
                     }`}
                   >
                     {s}×
@@ -320,16 +320,18 @@ function Tile({
 }) {
   const cls =
     tone === "good"
-      ? "text-accent"
+      ? "text-brand-teal"
       : tone === "violet"
-        ? "text-violet-300"
-        : "text-gray-100";
+        ? "text-ink"
+        : "text-ink";
   return (
-    <div className="rounded-lg border border-border bg-bg/40 px-3 py-2">
-      <div className="text-[10px] uppercase tracking-wider text-muted">
+    <div className="rounded-2xl bg-canvas border border-ink/10 px-3.5 py-2.5">
+      <div className="text-[10px] uppercase tracking-[0.14em] text-ink/60 font-semibold">
         {label}
       </div>
-      <div className={`font-mono text-base mt-0.5 ${cls}`}>{value}</div>
+      <div className={`font-display text-lg tracking-tightish mt-0.5 ${cls}`}>
+        {value}
+      </div>
     </div>
   );
 }

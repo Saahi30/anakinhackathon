@@ -60,7 +60,7 @@ export default function GeoMap() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-[1fr_240px]">
         {/* Map */}
-        <div className="relative aspect-[4/5] md:aspect-auto md:min-h-[420px] bg-gradient-to-br from-bg via-bg to-panel">
+        <div className="relative aspect-[4/5] md:aspect-auto md:min-h-[420px] bg-soft">
           <svg
             viewBox="0 0 100 100"
             className="absolute inset-0 w-full h-full"
@@ -69,8 +69,8 @@ export default function GeoMap() {
             {/* Stylised India outline (rough approximation) */}
             <path
               d="M30,20 Q35,15 42,16 L52,14 Q60,18 64,22 L72,28 Q78,38 75,46 L72,52 Q70,58 67,58 L70,66 Q72,76 64,82 L58,90 Q52,96 48,94 Q44,92 40,86 Q34,82 32,72 Q28,64 30,58 Q26,52 28,44 Q26,36 30,28 Z"
-              fill="rgba(40,55,75,0.3)"
-              stroke="rgba(122,130,144,0.3)"
+              fill="rgba(184,164,237,0.35)"
+              stroke="rgba(26,58,58,0.35)"
               strokeWidth="0.3"
               strokeLinejoin="round"
             />
@@ -82,7 +82,7 @@ export default function GeoMap() {
                 y1={y}
                 x2="100"
                 y2={y}
-                stroke="rgba(122,130,144,0.06)"
+                stroke="rgba(26,58,58,0.08)"
                 strokeWidth="0.2"
               />
             ))}
@@ -135,9 +135,9 @@ export default function GeoMap() {
                       x={c.x + r + 1.2}
                       y={c.y + 0.7}
                       fontSize="2.2"
-                      fill={isHover ? "#fff" : "rgba(229,231,235,0.85)"}
+                      fill={isHover ? "#0a0a0a" : "rgba(10,10,10,0.78)"}
                       fontFamily="Inter, sans-serif"
-                      fontWeight="500"
+                      fontWeight="600"
                     >
                       {c.name}
                     </text>
@@ -206,16 +206,20 @@ function Legend({ color, label }: { color: string; label: string }) {
 function Tooltip({ city }: { city: City }) {
   return (
     <div
-      className="absolute pointer-events-none rounded-lg border border-border bg-bg/95 backdrop-blur shadow-xl px-3 py-2 text-xs"
+      className="absolute pointer-events-none rounded-2xl bg-canvas shadow-clay-lift border border-hairline px-3.5 py-2 text-xs"
       style={{
         left: `${city.x}%`,
         top: `${city.y}%`,
         transform: "translate(-50%, -130%)",
       }}
     >
-      <div className="font-semibold text-gray-100">{city.name}</div>
+      <div className="font-display tracking-tightish text-base text-ink">
+        {city.name}
+      </div>
       <div className="text-muted">{city.darkStores} dark stores</div>
-      <div className="text-danger font-mono">{city.oosCount} strikes / 30d</div>
+      <div className="text-brand-coral font-mono">
+        {city.oosCount} strikes / 30d
+      </div>
     </div>
   );
 }

@@ -11,10 +11,15 @@ export default function InsightsPanel({
   monitors: Monitor[];
 }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-semibold">Insights</h2>
-        <p className="text-sm text-muted mt-0.5">
+        <div className="text-[11px] uppercase tracking-[0.16em] text-muted font-semibold">
+          Patterns
+        </div>
+        <h2 className="font-display text-4xl tracking-display text-ink mt-1">
+          Insights
+        </h2>
+        <p className="text-sm text-muted mt-1.5">
           Patterns across competitors, platforms, and time.
         </p>
       </div>
@@ -26,28 +31,22 @@ export default function InsightsPanel({
         <GeoMap />
       </div>
 
-      <section className="rounded-xl border border-border bg-gradient-to-br from-violet-500/5 to-transparent p-5">
-        <div className="text-[10px] uppercase tracking-wider text-violet-300 font-semibold">
+      <section className="rounded-clay bg-brand-lavender p-8 shadow-clay">
+        <div className="text-[11px] uppercase tracking-[0.16em] text-ink/70 font-semibold">
           AI-generated narrative · weekly digest preview
         </div>
-        <p className="text-sm text-gray-200 mt-2 leading-relaxed max-w-3xl">
+        <p className="font-display text-2xl tracking-tightish text-ink mt-3 leading-snug max-w-3xl">
           Your top rival{" "}
-          <span className="text-gray-100 font-medium">
-            Mamaearth Onion Hair Oil
-          </span>{" "}
-          went OOS{" "}
-          <span className="text-danger font-mono">32 times</span> in the last 30
+          <span className="font-semibold">Mamaearth Onion Hair Oil</span> went
+          OOS <span className="text-brand-coral">32 times</span> in the last 30
           days, mostly on{" "}
-          <span className="text-gray-100">Monday evenings 7–10pm</span>. The
-          quick-commerce hot zone is{" "}
-          <span className="text-gray-100">Mumbai</span> followed by Delhi NCR —
-          Blinkit accounts for{" "}
-          <span className="text-gray-100">62%</span> of strikes captured. Total
+          <span className="font-semibold">Monday evenings 7–10pm</span>. The
+          quick-commerce hot zone is <span className="font-semibold">Mumbai</span>{" "}
+          followed by Delhi NCR — Blinkit accounts for{" "}
+          <span className="font-semibold">62%</span> of strikes captured. Total
           attributed revenue this week:{" "}
-          <span className="text-accent font-mono font-semibold">
-            ₹68,420
-          </span>{" "}
-          at <span className="text-violet-300 font-mono">5.4× ROAS</span>.
+          <span className="text-brand-teal font-semibold">₹68,420</span> at{" "}
+          <span className="font-semibold">5.4× ROAS</span>.
         </p>
       </section>
     </div>

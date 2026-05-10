@@ -219,33 +219,39 @@ export default function Dashboard() {
           }}
         />
       )}
-      <header className="border-b border-border bg-panel/60 backdrop-blur sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-accent/15 border border-accent/40 grid place-items-center">
-              <span className="text-accent font-bold text-lg">⚡</span>
+      <header className="sticky top-0 z-10 backdrop-blur-md bg-canvas/85 border-b border-hairline">
+        <div className="max-w-7xl mx-auto px-8 py-5 flex items-center justify-between gap-6">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-2xl bg-brand-peach grid place-items-center shadow-clay">
+              <span className="text-ink font-display font-bold text-xl leading-none">
+                ⚡
+              </span>
             </div>
             <div>
-              <div className="text-xl font-semibold tracking-tight">
+              <div className="font-display text-2xl tracking-display text-ink leading-none">
                 StockStrike
               </div>
-              <div className="text-xs text-muted">
+              <div className="text-xs text-muted mt-1">
                 Capture competitor OOS traffic in real time
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             {stats.oos > 0 && (
               <button
                 onClick={() => setTab("strikes")}
-                className="inline-flex items-center gap-1.5 text-xs text-danger px-2 py-1 rounded border border-danger/40 bg-danger/10 hover:bg-danger/20 transition"
+                className="inline-flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full bg-brand-coral text-white hover:bg-brand-coral/90 transition shadow-clay"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                 {stats.oos} live strike{stats.oos === 1 ? "" : "s"}
               </button>
             )}
             <span
-              className={`inline-flex items-center gap-1.5 text-xs ${realtimeOk ? "text-accent" : "text-muted"}`}
+              className={`inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border ${
+                realtimeOk
+                  ? "border-brand-mint bg-brand-mint/30 text-brand-teal"
+                  : "border-hairline bg-soft text-muted"
+              }`}
               title={
                 realtimeOk
                   ? "Connected to Supabase Realtime"
@@ -253,7 +259,7 @@ export default function Dashboard() {
               }
             >
               <span
-                className={`w-1.5 h-1.5 rounded-full ${realtimeOk ? "bg-accent animate-pulse" : "bg-muted"}`}
+                className={`w-1.5 h-1.5 rounded-full ${realtimeOk ? "bg-brand-teal animate-pulse" : "bg-muted-soft"}`}
               />
               {realtimeOk ? "realtime" : "offline"}
             </span>
@@ -267,27 +273,33 @@ export default function Dashboard() {
                     : `Slack failed: ${data.error || data.status}`
                 );
               }}
-              className="px-3 py-1.5 text-xs rounded-md border border-border hover:border-accent/60 hover:text-accent transition"
+              className="px-4 py-1.5 text-xs font-medium rounded-full bg-ink text-white hover:bg-ink/90 transition"
             >
               Send Slack test
             </button>
           </div>
         </div>
-        <div className="max-w-7xl mx-auto px-6">
-          <nav className="flex gap-1 overflow-x-auto">
+        <div className="max-w-7xl mx-auto px-8 pb-3">
+          <nav className="flex gap-1.5 overflow-x-auto -mx-1 px-1">
             {tabs.map((t) => (
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className={`px-3 py-2 text-xs font-medium border-b-2 transition shrink-0 inline-flex items-center gap-1.5 ${
+                className={`px-4 py-1.5 text-sm font-medium rounded-full transition shrink-0 inline-flex items-center gap-2 ${
                   tab === t.id
-                    ? "border-accent text-accent"
-                    : "border-transparent text-muted hover:text-gray-200"
+                    ? "bg-ink text-white"
+                    : "text-muted hover:text-ink hover:bg-soft"
                 }`}
               >
                 {t.label}
                 {t.badge && (
-                  <span className="text-[9px] px-1.5 rounded-full bg-danger/20 text-danger border border-danger/40">
+                  <span
+                    className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                      tab === t.id
+                        ? "bg-brand-coral text-white"
+                        : "bg-brand-coral/15 text-brand-coral"
+                    }`}
+                  >
                     {t.badge}
                   </span>
                 )}
@@ -297,7 +309,7 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-6 space-y-6">
+      <main className="max-w-7xl mx-auto px-8 py-8 space-y-8">
         <StatsBar stats={stats} />
 
         {(tab === "monitoring" || tab === "feed") && (
@@ -359,11 +371,28 @@ export default function Dashboard() {
           </div>
         )}
 
-        <footer className="text-xs text-muted text-center pt-6 pb-12">
-          Onboarding: <span className="text-accent">Anakin</span> scrapes brand &
-          listings · <span className="text-accent">Groq</span> extracts brand
-          profile · <span className="text-accent">Rainforest</span> finds Amazon
-          competitors · <span className="text-accent">Slack</span> alerts on OOS
+        <footer className="mt-12 rounded-clay bg-soft px-8 py-10 text-center">
+          <div className="font-display text-2xl tracking-display text-ink mb-3">
+            Capture homeless traffic the moment it appears.
+          </div>
+          <div className="text-sm text-muted max-w-2xl mx-auto leading-relaxed">
+            <span className="text-brand-teal font-medium">Anakin</span> scrapes
+            brand &amp; listings ·{" "}
+            <span className="text-brand-teal font-medium">Groq</span> extracts
+            the brand profile ·{" "}
+            <span className="text-brand-teal font-medium">Rainforest</span>{" "}
+            finds Amazon competitors ·{" "}
+            <span className="text-brand-teal font-medium">Slack</span> pings the
+            moment a rival goes out of stock.
+          </div>
+          <div className="mt-6 flex items-center justify-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-brand-pink" />
+            <span className="w-2 h-2 rounded-full bg-brand-peach" />
+            <span className="w-2 h-2 rounded-full bg-brand-ochre" />
+            <span className="w-2 h-2 rounded-full bg-brand-mint" />
+            <span className="w-2 h-2 rounded-full bg-brand-lavender" />
+            <span className="w-2 h-2 rounded-full bg-brand-teal" />
+          </div>
         </footer>
       </main>
 

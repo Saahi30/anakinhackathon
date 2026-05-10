@@ -102,18 +102,20 @@ export default function Onboarding({
   const goBack = () => setStep(STEP_ORDER[Math.max(0, idx - 1)]);
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-start bg-black/75 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="w-full max-w-3xl mx-auto rounded-2xl border border-border bg-panel shadow-2xl my-6">
-        <div className="px-6 py-5 border-b border-border flex items-center justify-between gap-4">
+    <div className="fixed inset-0 z-50 grid place-items-start bg-ink/40 backdrop-blur-md p-4 overflow-y-auto">
+      <div className="w-full max-w-3xl mx-auto rounded-clay bg-canvas shadow-clay-lift my-6 border border-hairline overflow-hidden">
+        <div className="px-8 py-6 border-b border-hairline flex items-center justify-between gap-4 bg-soft">
           <div className="min-w-0">
-            <div className="text-xs text-accent uppercase tracking-wider font-semibold">
+            <div className="text-[11px] uppercase tracking-[0.16em] text-brand-teal font-semibold">
               StockStrike onboarding
             </div>
-            <h1 className="text-xl font-semibold mt-0.5">{stepTitle(step)}</h1>
+            <h1 className="font-display text-3xl tracking-display text-ink mt-1.5">
+              {stepTitle(step)}
+            </h1>
           </div>
           <button
             onClick={onSkip}
-            className="text-xs text-muted hover:text-gray-200 shrink-0"
+            className="text-xs text-muted hover:text-ink shrink-0 px-3 py-1.5 rounded-full hover:bg-canvas transition"
           >
             Skip for now
           </button>

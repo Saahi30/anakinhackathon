@@ -15,12 +15,12 @@ type StrikeRow = {
 };
 
 const platformBadge: Record<string, string> = {
-  myntra: "bg-pink-500/15 text-pink-400 border-pink-500/30",
-  ajio: "bg-violet-500/15 text-violet-400 border-violet-500/30",
-  blinkit: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
-  zepto: "bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/30",
-  amazon: "bg-orange-500/15 text-orange-400 border-orange-500/30",
-  unknown: "bg-border text-muted border-border",
+  myntra: "bg-brand-pink/15 text-brand-pink border-brand-pink/40",
+  ajio: "bg-brand-lavender/30 text-ink border-brand-lavender/60",
+  blinkit: "bg-brand-ochre/25 text-brand-teal border-brand-ochre/50",
+  zepto: "bg-brand-pink/10 text-brand-pink border-brand-pink/30",
+  amazon: "bg-brand-peach/30 text-ink border-brand-peach/60",
+  unknown: "bg-soft text-muted border-hairline",
 };
 
 const FALLBACK_STRIKES: StrikeRow[] = [
@@ -137,20 +137,25 @@ export default function StrikesPanel({
     <div className="space-y-6">
       <div className="flex items-end justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-2xl font-semibold">Strikes</h2>
-          <p className="text-sm text-muted mt-0.5">
+          <div className="text-[11px] uppercase tracking-[0.16em] text-muted font-semibold">
+            Captured windows
+          </div>
+          <h2 className="font-display text-4xl tracking-display text-ink mt-1">
+            Strikes
+          </h2>
+          <p className="text-sm text-muted mt-1.5">
             Every captured OOS window. Click any row to replay.
           </p>
         </div>
-        <div className="flex items-center gap-1 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap">
           {platforms.map((p) => (
             <button
               key={p}
               onClick={() => setFilter(p)}
-              className={`text-xs px-3 py-1.5 rounded-full transition capitalize ${
+              className={`text-xs px-3.5 py-1.5 rounded-full transition capitalize ${
                 filter === p
-                  ? "bg-accent/15 text-accent border border-accent/40"
-                  : "border border-border text-muted hover:text-gray-200"
+                  ? "bg-ink text-white"
+                  : "bg-soft text-muted hover:text-ink"
               }`}
             >
               {p}
@@ -166,10 +171,10 @@ export default function StrikesPanel({
         <Stat label="Avg ROAS" value={avgRoas.toFixed(1) + "×"} tone="violet" />
       </div>
 
-      <section className="rounded-xl border border-border bg-panel overflow-hidden">
+      <section className="rounded-clay bg-panel border border-hairline shadow-clay overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="text-[10px] uppercase tracking-wider text-muted border-b border-border">
+            <thead className="text-[10px] uppercase tracking-[0.14em] text-muted bg-soft border-b border-hairline font-semibold">
               <tr>
                 <th className="text-left px-5 py-3 font-medium">Competitor</th>
                 <th className="text-left px-2 py-3 font-medium">Platform</th>
@@ -186,14 +191,14 @@ export default function StrikesPanel({
                 return (
                   <tr
                     key={`${s.monitorId}-${i}`}
-                    className="border-b border-border/50 hover:bg-bg/40 cursor-pointer"
+                    className="border-b border-hairline/60 hover:bg-soft/60 cursor-pointer transition"
                     onClick={() => setReplay(s)}
                   >
-                    <td className="px-5 py-3 max-w-[300px]">
-                      <div className="font-medium text-gray-100 truncate flex items-center gap-2">
+                    <td className="px-5 py-3.5 max-w-[300px]">
+                      <div className="font-medium text-ink truncate flex items-center gap-2">
                         {s.isLive && (
-                          <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-danger px-1.5 py-0.5 rounded border border-danger/40 bg-danger/10 shrink-0">
-                            <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse" />
+                          <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.14em] font-semibold text-white px-2 py-0.5 rounded-full bg-brand-coral shrink-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                             Live
                           </span>
                         )}
@@ -210,19 +215,19 @@ export default function StrikesPanel({
                     <td className="px-2 py-3 text-xs text-muted">
                       {new Date(s.startedAt).toLocaleString()}
                     </td>
-                    <td className="px-2 py-3 text-right font-mono">
+                    <td className="px-2 py-3 text-right font-mono text-ink">
                       {s.durationMinutes < 60
                         ? `${s.durationMinutes}m`
                         : `${(s.durationMinutes / 60).toFixed(1)}h`}
                     </td>
-                    <td className="px-2 py-3 text-right font-mono text-accent">
+                    <td className="px-2 py-3 text-right font-mono text-brand-teal">
                       {inr(roi.revenue)}
                     </td>
-                    <td className="px-2 py-3 text-right font-mono text-violet-300">
+                    <td className="px-2 py-3 text-right font-mono text-ink">
                       {roi.roas}×
                     </td>
                     <td className="px-5 py-3 text-right">
-                      <span className="text-xs text-violet-300 hover:underline">
+                      <span className="text-xs text-brand-teal hover:underline font-medium">
                         ▶ Replay
                       </span>
                     </td>
@@ -259,16 +264,20 @@ function Stat({
 }) {
   const cls =
     tone === "danger"
-      ? "text-danger border-danger/30 bg-danger/5"
+      ? "bg-brand-coral text-white"
       : tone === "good"
-        ? "text-accent border-accent/30 bg-accent/5"
+        ? "bg-brand-mint text-brand-teal"
         : tone === "violet"
-          ? "text-violet-300 border-violet-400/30 bg-violet-400/5"
-          : "text-gray-100 border-border bg-panel";
+          ? "bg-brand-lavender text-ink"
+          : "bg-card text-ink";
   return (
-    <div className={`rounded-lg border px-4 py-3 ${cls}`}>
-      <div className="text-xs uppercase tracking-wide opacity-70">{label}</div>
-      <div className="text-2xl font-semibold mt-1">{value}</div>
+    <div className={`rounded-clay px-5 py-4 shadow-clay ${cls}`}>
+      <div className="text-[11px] uppercase tracking-[0.14em] font-semibold opacity-80">
+        {label}
+      </div>
+      <div className="font-display text-3xl tracking-display mt-1.5">
+        {value}
+      </div>
     </div>
   );
 }

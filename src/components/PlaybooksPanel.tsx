@@ -124,11 +124,16 @@ export default function PlaybooksPanel() {
     setBooks((bs) => bs.filter((b) => b.id !== id));
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex items-end justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-semibold">Playbooks</h2>
-          <p className="text-sm text-muted mt-0.5">
+          <div className="text-[11px] uppercase tracking-[0.16em] text-muted font-semibold">
+            Automation
+          </div>
+          <h2 className="font-display text-4xl tracking-display text-ink mt-1">
+            Playbooks
+          </h2>
+          <p className="text-sm text-muted mt-1.5">
             Automated rules that fire when a competitor goes out of stock.
           </p>
         </div>
@@ -150,7 +155,7 @@ export default function PlaybooksPanel() {
             setBooks((bs) => [nb, ...bs]);
             setEditing(nb.id);
           }}
-          className="text-sm px-4 py-2 rounded-md bg-accent text-black font-medium hover:bg-accent/90"
+          className="text-sm px-5 py-2.5 rounded-full bg-ink text-white font-medium hover:bg-ink/90"
         >
           + New playbook
         </button>

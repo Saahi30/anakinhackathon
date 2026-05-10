@@ -52,12 +52,17 @@ export default function AddMonitor({ onAdded }: { onAdded: () => void }) {
 
   return (
     <>
-      <section className="rounded-xl border border-border bg-panel p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
-            Quick-add competitor URL
-          </h2>
-          <span className="text-[10px] uppercase tracking-wider text-muted">
+      <section className="rounded-clay bg-panel border border-hairline p-7 shadow-clay">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <div className="text-[11px] uppercase tracking-[0.16em] text-muted font-semibold">
+              Quick add
+            </div>
+            <h2 className="font-display text-2xl tracking-display text-ink mt-1">
+              Drop a competitor URL
+            </h2>
+          </div>
+          <span className="text-[10px] uppercase tracking-[0.14em] px-2.5 py-1 rounded-full bg-soft text-muted">
             manual fallback
           </span>
         </div>
@@ -68,7 +73,7 @@ export default function AddMonitor({ onAdded }: { onAdded: () => void }) {
             placeholder="https://www.myntra.com/... or amazon.in/... or zepto/blinkit/ajio"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            className="w-full bg-bg border border-border rounded-md px-3 py-2.5 text-sm focus:border-accent focus:outline-none"
+            className="w-full bg-canvas border border-hairline rounded-2xl px-4 py-3 text-sm text-ink placeholder:text-muted-soft focus:border-ink focus:outline-none transition"
           />
           <div className="flex gap-2">
             <input
@@ -76,18 +81,18 @@ export default function AddMonitor({ onAdded }: { onAdded: () => void }) {
               placeholder="SKU / label (optional)"
               value={sku}
               onChange={(e) => setSku(e.target.value)}
-              className="flex-1 bg-bg border border-border rounded-md px-3 py-2.5 text-sm focus:border-accent focus:outline-none"
+              className="flex-1 bg-canvas border border-hairline rounded-2xl px-4 py-3 text-sm text-ink placeholder:text-muted-soft focus:border-ink focus:outline-none transition"
             />
             <button
               type="submit"
               disabled={busy}
-              className="px-5 py-2.5 rounded-md bg-accent text-black font-medium text-sm hover:bg-accent/90 disabled:opacity-50"
+              className="px-6 py-3 rounded-2xl bg-ink text-white font-medium text-sm hover:bg-ink/90 disabled:opacity-50 transition"
             >
               {busy ? "Adding…" : "Monitor"}
             </button>
           </div>
-          {error && <div className="text-danger text-xs">{error}</div>}
-          <div className="text-xs text-muted">
+          {error && <div className="text-brand-coral text-xs">{error}</div>}
+          <div className="text-xs text-muted leading-relaxed">
             Skips discovery — useful when you already know the exact competitor
             URL. Watch the live anakin scrape stream when you submit.
           </div>

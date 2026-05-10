@@ -91,14 +91,14 @@ export default function ScrapePreview({
   }, [lines.length]);
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="w-full max-w-2xl rounded-2xl border border-border bg-panel shadow-2xl overflow-hidden">
-        <div className="px-5 py-3 border-b border-border bg-bg/60 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-ink/40 backdrop-blur-md p-4">
+      <div className="w-full max-w-2xl rounded-clay bg-canvas shadow-clay-lift overflow-hidden border border-hairline">
+        <div className="px-5 py-3.5 border-b border-hairline bg-soft flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="flex gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-danger/60" />
-              <div className="w-3 h-3 rounded-full bg-warn/60" />
-              <div className="w-3 h-3 rounded-full bg-accent/60" />
+              <div className="w-3 h-3 rounded-full bg-brand-coral" />
+              <div className="w-3 h-3 rounded-full bg-brand-ochre" />
+              <div className="w-3 h-3 rounded-full bg-brand-mint" />
             </div>
             <span className="text-xs text-muted ml-2 font-mono">
               anakin · live scrape
@@ -106,14 +106,14 @@ export default function ScrapePreview({
           </div>
           <button
             onClick={onClose}
-            className="text-xs text-muted hover:text-gray-200"
+            className="text-xs text-ink hover:bg-canvas px-3 py-1 rounded-full border border-hairline"
           >
             {done ? "Close" : "Hide"}
           </button>
         </div>
         <div
           ref={ref}
-          className="bg-[#0a0c0f] font-mono text-xs p-4 h-80 overflow-y-auto"
+          className="bg-surface-dark font-mono text-xs p-4 h-80 overflow-y-auto"
         >
           {lines.map((l, i) => (
             <div key={i} className={`${toneClass[l.tone]} leading-relaxed`}>
@@ -121,16 +121,16 @@ export default function ScrapePreview({
             </div>
           ))}
           {!done && (
-            <span className="inline-block w-2 h-4 bg-accent/80 animate-pulse" />
+            <span className="inline-block w-2 h-4 bg-brand-mint animate-pulse" />
           )}
         </div>
-        <div className="px-5 py-3 border-t border-border bg-bg/60 flex items-center justify-between">
-          <span className="text-[10px] uppercase tracking-wider text-muted">
+        <div className="px-5 py-3 border-t border-hairline bg-soft flex items-center justify-between">
+          <span className="text-[10px] uppercase tracking-[0.14em] text-muted">
             Powered by anakin.io · stealth Chromium · residential proxy
           </span>
           {done && (
-            <span className="text-xs text-accent flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+            <span className="text-xs text-brand-teal flex items-center gap-1.5 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-brand-teal" />
               monitor active
             </span>
           )}

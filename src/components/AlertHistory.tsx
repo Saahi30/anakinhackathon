@@ -16,12 +16,19 @@ export default function AlertHistory({ events }: { events: Event[] }) {
   const oosEvents = events.filter((e) => e.kind === "oos_detected");
 
   return (
-    <section className="rounded-xl border border-border bg-panel">
-      <div className="px-5 py-3 border-b border-border flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
-          Alert history
-        </h2>
-        <span className="text-xs text-muted">{oosEvents.length} OOS alerts</span>
+    <section className="rounded-clay bg-panel border border-hairline shadow-clay overflow-hidden">
+      <div className="px-7 py-5 border-b border-hairline flex items-center justify-between bg-soft">
+        <div>
+          <div className="text-[11px] uppercase tracking-[0.16em] text-muted font-semibold">
+            History
+          </div>
+          <h2 className="font-display text-2xl tracking-display text-ink mt-0.5">
+            Alert history
+          </h2>
+        </div>
+        <span className="text-xs text-muted px-3 py-1 rounded-full bg-canvas border border-hairline">
+          {oosEvents.length} OOS alerts
+        </span>
       </div>
       {!oosEvents.length ? (
         <div className="px-5 py-8 text-center text-muted text-sm">

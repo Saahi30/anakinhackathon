@@ -180,23 +180,28 @@ export default function IntegrationsPanel() {
   const visible = ITEMS.filter((i) => filter === "All" || i.category === filter);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex items-end justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-2xl font-semibold">Integrations</h2>
-          <p className="text-sm text-muted mt-0.5">
+          <div className="text-[11px] uppercase tracking-[0.16em] text-muted font-semibold">
+            Connections
+          </div>
+          <h2 className="font-display text-4xl tracking-display text-ink mt-1">
+            Integrations
+          </h2>
+          <p className="text-sm text-muted mt-1.5">
             Connect channels, ad platforms, and automation tools.
           </p>
         </div>
-        <div className="flex items-center gap-1 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap">
           {(["All", ...CATEGORIES] as string[]).map((c) => (
             <button
               key={c}
               onClick={() => setFilter(c)}
-              className={`text-xs px-3 py-1.5 rounded-full transition ${
+              className={`text-xs px-3.5 py-1.5 rounded-full transition ${
                 filter === c
-                  ? "bg-accent/15 text-accent border border-accent/40"
-                  : "border border-border text-muted hover:text-gray-200"
+                  ? "bg-ink text-white"
+                  : "bg-soft text-muted hover:text-ink"
               }`}
             >
               {c}
@@ -211,7 +216,7 @@ export default function IntegrationsPanel() {
           return (
             <div
               key={item.key}
-              className={`rounded-xl border ${isOn ? "border-accent/40" : "border-border"} bg-panel p-5 hover:border-gray-500/50 transition group`}
+              className={`rounded-clay ${isOn ? "bg-card" : "bg-panel"} border border-hairline p-6 transition shadow-clay hover:shadow-clay-lift group`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div
@@ -225,17 +230,19 @@ export default function IntegrationsPanel() {
                   </span>
                 )}
               </div>
-              <div className="mt-3">
+              <div className="mt-4">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-medium">{item.name}</h3>
+                  <h3 className="font-display tracking-tightish text-lg text-ink">
+                    {item.name}
+                  </h3>
                   {isOn && (
-                    <span className="text-[10px] uppercase tracking-wider text-accent flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+                    <span className="text-[10px] uppercase tracking-[0.14em] text-brand-teal font-semibold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-brand-teal" />
                       Connected
                     </span>
                   )}
                 </div>
-                <div className="text-[10px] uppercase tracking-wider text-muted mt-0.5">
+                <div className="text-[10px] uppercase tracking-[0.14em] text-muted mt-1">
                   {item.category}
                 </div>
               </div>
@@ -246,10 +253,10 @@ export default function IntegrationsPanel() {
                 onClick={() =>
                   setConnected((c) => ({ ...c, [item.key]: !c[item.key] }))
                 }
-                className={`mt-4 w-full text-sm py-2 rounded-md font-medium transition ${
+                className={`mt-5 w-full text-sm py-2.5 rounded-full font-medium transition ${
                   isOn
-                    ? "bg-bg border border-border text-gray-200 hover:border-danger/60 hover:text-danger"
-                    : "bg-accent text-black hover:bg-accent/90"
+                    ? "bg-canvas border border-hairline text-ink hover:border-brand-coral hover:text-brand-coral"
+                    : "bg-ink text-white hover:bg-ink/90"
                 }`}
               >
                 {isOn ? "Disconnect" : "Connect"}

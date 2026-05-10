@@ -23,14 +23,14 @@ export default function BrandSummary({
 
   if (!brand || !brand.brand_name) {
     return (
-      <section className="rounded-xl border border-border bg-panel p-5">
+      <section className="rounded-clay bg-panel border border-hairline p-6 shadow-clay">
         <div className="flex items-center justify-between gap-2 mb-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
+          <h2 className="text-[11px] uppercase tracking-[0.16em] text-muted font-semibold">
             Brand profile
           </h2>
           <button
             onClick={onReRun}
-            className="text-xs text-accent hover:underline"
+            className="text-xs text-brand-teal hover:underline font-medium"
           >
             Run onboarding
           </button>
@@ -52,25 +52,32 @@ export default function BrandSummary({
     .filter(Boolean);
 
   return (
-    <section className="rounded-xl border border-border bg-panel p-5 space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
-          {brand.brand_name}
-        </h2>
+    <section className="rounded-clay bg-card p-6 space-y-3 shadow-clay">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <div className="text-[11px] uppercase tracking-[0.16em] text-muted font-semibold">
+            Brand
+          </div>
+          <h2 className="font-display text-xl tracking-tightish text-ink mt-0.5">
+            {brand.brand_name}
+          </h2>
+        </div>
         <button
           onClick={onReRun}
-          className="text-xs text-accent hover:underline"
+          className="text-xs text-brand-teal hover:underline font-medium shrink-0"
         >
-          Re-run onboarding
+          Re-run
         </button>
       </div>
       {brand.brand_tagline && (
-        <div className="text-sm italic text-gray-200">
-          “{brand.brand_tagline}”
+        <div className="font-display text-base italic text-ink leading-snug">
+          "{brand.brand_tagline}"
         </div>
       )}
       {brand.brand_description && (
-        <div className="text-xs text-gray-300">{brand.brand_description}</div>
+        <div className="text-xs text-body-text leading-relaxed">
+          {brand.brand_description}
+        </div>
       )}
       <div className="grid grid-cols-2 gap-3 text-xs">
         {brand.brand_voice && (

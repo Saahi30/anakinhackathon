@@ -17,33 +17,33 @@ function timeAgo(iso: string | null): string {
 function statusPill(status: string | null) {
   if (status === "out_of_stock")
     return (
-      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-danger/15 text-danger text-xs font-medium">
-        <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse" />
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-brand-coral text-white text-xs font-semibold">
+        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
         OUT OF STOCK
       </span>
     );
   if (status === "in_stock")
     return (
-      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-accent/15 text-accent text-xs font-medium">
-        <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-brand-mint text-brand-teal text-xs font-semibold">
+        <span className="w-1.5 h-1.5 rounded-full bg-brand-teal" />
         in stock
       </span>
     );
   return (
-    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-border text-muted text-xs">
-      <span className="w-1.5 h-1.5 rounded-full bg-muted" />
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-soft text-muted text-xs">
+      <span className="w-1.5 h-1.5 rounded-full bg-muted-soft" />
       {status === "unknown" ? "checking…" : "—"}
     </span>
   );
 }
 
 const platformColors: Record<string, string> = {
-  myntra: "bg-pink-500/15 text-pink-400 border-pink-500/30",
-  ajio: "bg-violet-500/15 text-violet-400 border-violet-500/30",
-  blinkit: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
-  zepto: "bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/30",
-  amazon: "bg-orange-500/15 text-orange-400 border-orange-500/30",
-  unknown: "bg-border text-muted border-border",
+  myntra: "bg-brand-pink/15 text-brand-pink border-brand-pink/40",
+  ajio: "bg-brand-lavender/30 text-ink border-brand-lavender/60",
+  blinkit: "bg-brand-ochre/25 text-brand-teal border-brand-ochre/50",
+  zepto: "bg-brand-pink/10 text-brand-pink border-brand-pink/30",
+  amazon: "bg-brand-peach/30 text-ink border-brand-peach/60",
+  unknown: "bg-soft text-muted border-hairline",
 };
 
 export default function MonitorList({
@@ -56,12 +56,19 @@ export default function MonitorList({
   onOpenWarRoom?: (m: Monitor) => void;
 }) {
   return (
-    <section className="rounded-xl border border-border bg-panel">
-      <div className="px-5 py-3 border-b border-border flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
-          Monitored listings
-        </h2>
-        <span className="text-xs text-muted">{monitors.length} URLs</span>
+    <section className="rounded-clay bg-panel border border-hairline shadow-clay overflow-hidden">
+      <div className="px-7 py-5 border-b border-hairline flex items-center justify-between bg-soft">
+        <div>
+          <div className="text-[11px] uppercase tracking-[0.16em] text-muted font-semibold">
+            Listings
+          </div>
+          <h2 className="font-display text-2xl tracking-display text-ink mt-0.5">
+            Monitored listings
+          </h2>
+        </div>
+        <span className="text-xs text-muted px-3 py-1 rounded-full bg-canvas border border-hairline">
+          {monitors.length} URLs
+        </span>
       </div>
       {!monitors.length && (
         <div className="px-5 py-12 text-center text-muted text-sm">
@@ -74,13 +81,13 @@ export default function MonitorList({
           return (
             <li
               key={m.id}
-              className={`px-5 py-4 transition ${isOOS ? "bg-danger/5" : "hover:bg-bg/40"}`}
+              className={`px-7 py-5 transition ${isOOS ? "bg-brand-coral/5" : "hover:bg-soft/60"}`}
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span
-                      className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded border ${platformColors[m.platform] || platformColors.unknown}`}
+                      className={`text-[10px] uppercase tracking-[0.14em] font-semibold px-2 py-0.5 rounded-full border ${platformColors[m.platform] || platformColors.unknown}`}
                     >
                       {m.platform}
                     </span>
@@ -91,14 +98,14 @@ export default function MonitorList({
                       </span>
                     )}
                   </div>
-                  <div className="mt-1.5 font-medium truncate text-gray-100">
+                  <div className="mt-2 font-display text-lg tracking-tightish truncate text-ink">
                     {m.label || m.url}
                   </div>
                   <a
                     href={m.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-xs text-muted hover:text-accent truncate block"
+                    className="text-xs text-muted hover:text-brand-teal truncate block"
                   >
                     {m.url}
                   </a>
@@ -122,7 +129,7 @@ export default function MonitorList({
                     />
                   )}
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     onClick={async () => {
                       await fetch(`/api/monitors/${m.id}/check`, {
@@ -131,7 +138,7 @@ export default function MonitorList({
                       onChange();
                     }}
                     title="Run a scrape now"
-                    className="text-xs px-2 py-1 rounded border border-border hover:border-accent/60 hover:text-accent"
+                    className="text-xs px-3 py-1.5 rounded-full bg-soft hover:bg-strong text-ink"
                   >
                     Recheck
                   </button>
@@ -149,7 +156,7 @@ export default function MonitorList({
                       onChange();
                     }}
                     title="Fire a fake OOS alert (demo mode)"
-                    className="text-xs px-2 py-1 rounded border border-warn/30 text-warn hover:bg-warn/10"
+                    className="text-xs px-3 py-1.5 rounded-full bg-brand-ochre/30 text-brand-teal hover:bg-brand-ochre/50"
                   >
                     Demo OOS
                   </button>
@@ -160,7 +167,7 @@ export default function MonitorList({
                       onChange();
                     }}
                     title="Remove"
-                    className="text-xs px-2 py-1 rounded border border-border hover:border-danger/60 hover:text-danger"
+                    className="text-xs w-8 h-8 rounded-full bg-soft hover:bg-brand-coral/15 text-muted hover:text-brand-coral grid place-items-center"
                   >
                     ✕
                   </button>

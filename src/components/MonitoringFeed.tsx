@@ -43,13 +43,18 @@ const KIND_DISPLAY: Record<string, { label: string; tone: string; description: s
 
 export default function MonitoringFeed({ events }: { events: Event[] }) {
   return (
-    <section className="rounded-xl border border-border bg-panel">
-      <div className="px-5 py-3 border-b border-border flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
-          Live monitoring feed
-        </h2>
-        <span className="inline-flex items-center gap-1.5 text-xs text-accent">
-          <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+    <section className="rounded-clay bg-panel border border-hairline shadow-clay overflow-hidden">
+      <div className="px-7 py-5 border-b border-hairline flex items-center justify-between bg-soft">
+        <div>
+          <div className="text-[11px] uppercase tracking-[0.16em] text-muted font-semibold">
+            Realtime
+          </div>
+          <h2 className="font-display text-2xl tracking-display text-ink mt-0.5">
+            Live monitoring feed
+          </h2>
+        </div>
+        <span className="inline-flex items-center gap-1.5 text-xs text-brand-teal px-3 py-1 rounded-full bg-brand-mint/40">
+          <span className="w-1.5 h-1.5 rounded-full bg-brand-teal animate-pulse" />
           realtime
         </span>
       </div>
