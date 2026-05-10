@@ -1,6 +1,7 @@
 "use client";
 
 import type { Monitor } from "./Dashboard";
+import StrikeCountdown from "./StrikeCountdown";
 
 function timeAgo(iso: string | null): string {
   if (!iso) return "never";
@@ -48,9 +49,11 @@ const platformColors: Record<string, string> = {
 export default function MonitorList({
   monitors,
   onChange,
+  onOpenWarRoom,
 }: {
   monitors: Monitor[];
   onChange: () => void;
+  onOpenWarRoom?: (m: Monitor) => void;
 }) {
   return (
     <section className="rounded-xl border border-border bg-panel">
@@ -66,92 +69,106 @@ export default function MonitorList({
         </div>
       )}
       <ul className="divide-y divide-border">
-        {monitors.map((m) => (
-          <li key={m.id} className="px-5 py-4 hover:bg-bg/40 transition">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span
-                    className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded border ${platformColors[m.platform] || platformColors.unknown}`}
-                  >
-                    {m.platform}
-                  </span>
-                  {statusPill(m.last_status)}
-                  {m.sku && (
-                    <span className="text-xs text-muted font-mono">
-                      {m.sku}
+        {monitors.map((m) => {
+          const isOOS = m.last_status === "out_of_stock";
+          return (
+            <li
+              key={m.id}
+              className={`px-5 py-4 transition ${isOOS ? "bg-danger/5" : "hover:bg-bg/40"}`}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span
+                      className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded border ${platformColors[m.platform] || platformColors.unknown}`}
+                    >
+                      {m.platform}
                     </span>
-                  )}
-                </div>
-                <div className="mt-1.5 font-medium truncate text-gray-100">
-                  {m.label || m.url}
-                </div>
-                <a
-                  href={m.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs text-muted hover:text-accent truncate block"
-                >
-                  {m.url}
-                </a>
-                <div className="text-xs text-muted mt-1">
-                  Last checked {timeAgo(m.last_checked_at)}
-                  {m.last_oos_at && (
-                    <>
-                      {" · "}
-                      <span className="text-danger">
-                        OOS detected {timeAgo(m.last_oos_at)}
+                    {statusPill(m.last_status)}
+                    {m.sku && (
+                      <span className="text-xs text-muted font-mono">
+                        {m.sku}
                       </span>
-                    </>
+                    )}
+                  </div>
+                  <div className="mt-1.5 font-medium truncate text-gray-100">
+                    {m.label || m.url}
+                  </div>
+                  <a
+                    href={m.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-muted hover:text-accent truncate block"
+                  >
+                    {m.url}
+                  </a>
+                  <div className="text-xs text-muted mt-1">
+                    Last checked {timeAgo(m.last_checked_at)}
+                    {m.last_oos_at && !isOOS && (
+                      <>
+                        {" · "}
+                        <span className="text-danger">
+                          last OOS {timeAgo(m.last_oos_at)}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  {isOOS && m.last_oos_at && (
+                    <StrikeCountdown
+                      oosAt={m.last_oos_at}
+                      onOpenWarRoom={
+                        onOpenWarRoom ? () => onOpenWarRoom(m) : undefined
+                      }
+                    />
                   )}
                 </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={async () => {
-                    await fetch(`/api/monitors/${m.id}/check`, {
-                      method: "POST",
-                    });
-                    onChange();
-                  }}
-                  title="Run a scrape now"
-                  className="text-xs px-2 py-1 rounded border border-border hover:border-accent/60 hover:text-accent"
-                >
-                  Recheck
-                </button>
-                <button
-                  onClick={async () => {
-                    if (
-                      !confirm(
-                        "Fire a demo OOS alert for this URL? This pings Slack as if the competitor went out of stock."
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={async () => {
+                      await fetch(`/api/monitors/${m.id}/check`, {
+                        method: "POST",
+                      });
+                      onChange();
+                    }}
+                    title="Run a scrape now"
+                    className="text-xs px-2 py-1 rounded border border-border hover:border-accent/60 hover:text-accent"
+                  >
+                    Recheck
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (
+                        !confirm(
+                          "Fire a demo OOS alert for this URL? This pings Slack as if the competitor went out of stock."
+                        )
                       )
-                    )
-                      return;
-                    await fetch(`/api/monitors/${m.id}/demo-oos`, {
-                      method: "POST",
-                    });
-                    onChange();
-                  }}
-                  title="Fire a fake OOS alert (demo mode)"
-                  className="text-xs px-2 py-1 rounded border border-warn/30 text-warn hover:bg-warn/10"
-                >
-                  Demo OOS
-                </button>
-                <button
-                  onClick={async () => {
-                    if (!confirm("Remove this monitor?")) return;
-                    await fetch(`/api/monitors/${m.id}`, { method: "DELETE" });
-                    onChange();
-                  }}
-                  title="Remove"
-                  className="text-xs px-2 py-1 rounded border border-border hover:border-danger/60 hover:text-danger"
-                >
-                  ✕
-                </button>
+                        return;
+                      await fetch(`/api/monitors/${m.id}/demo-oos`, {
+                        method: "POST",
+                      });
+                      onChange();
+                    }}
+                    title="Fire a fake OOS alert (demo mode)"
+                    className="text-xs px-2 py-1 rounded border border-warn/30 text-warn hover:bg-warn/10"
+                  >
+                    Demo OOS
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!confirm("Remove this monitor?")) return;
+                      await fetch(`/api/monitors/${m.id}`, { method: "DELETE" });
+                      onChange();
+                    }}
+                    title="Remove"
+                    className="text-xs px-2 py-1 rounded border border-border hover:border-danger/60 hover:text-danger"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
-            </div>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

@@ -17,6 +17,19 @@ export default function SettingsPanel({
   const [autoAd, setAutoAd] = useState(settings.auto_ad_copy === "1");
   const [whatsapp, setWhatsapp] = useState(settings.whatsapp_enabled === "1");
   const [adsBid, setAdsBid] = useState(settings.ads_bid_surge_enabled === "1");
+  const [quietEnabled, setQuietEnabled] = useState(
+    settings.quiet_hours_enabled === "1"
+  );
+  const [quietStart, setQuietStart] = useState(
+    settings.quiet_hours_start || "23:00"
+  );
+  const [quietEnd, setQuietEnd] = useState(settings.quiet_hours_end || "07:00");
+  const [quietBypassCritical, setQuietBypassCritical] = useState(
+    settings.quiet_bypass_critical !== "0"
+  );
+  const [criticalThreshold, setCriticalThreshold] = useState(
+    settings.critical_revenue_threshold || "50000"
+  );
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
   useEffect(() => {
@@ -26,6 +39,11 @@ export default function SettingsPanel({
     setAutoAd(settings.auto_ad_copy === "1");
     setWhatsapp(settings.whatsapp_enabled === "1");
     setAdsBid(settings.ads_bid_surge_enabled === "1");
+    setQuietEnabled(settings.quiet_hours_enabled === "1");
+    setQuietStart(settings.quiet_hours_start || "23:00");
+    setQuietEnd(settings.quiet_hours_end || "07:00");
+    setQuietBypassCritical(settings.quiet_bypass_critical !== "0");
+    setCriticalThreshold(settings.critical_revenue_threshold || "50000");
   }, [settings]);
 
   async function save(patch: Record<string, string>) {
@@ -46,8 +64,25 @@ export default function SettingsPanel({
       auto_ad_copy: autoAd ? "1" : "0",
       whatsapp_enabled: whatsapp ? "1" : "0",
       ads_bid_surge_enabled: adsBid ? "1" : "0",
+      quiet_hours_enabled: quietEnabled ? "1" : "0",
+      quiet_hours_start: quietStart,
+      quiet_hours_end: quietEnd,
+      quiet_bypass_critical: quietBypassCritical ? "1" : "0",
+      critical_revenue_threshold: criticalThreshold,
     });
   }
+
+  // Live evaluation of whether right now is in quiet hours
+  const inQuietNow = (() => {
+    if (!quietEnabled) return false;
+    const now = new Date();
+    const [sh, sm] = quietStart.split(":").map(Number);
+    const [eh, em] = quietEnd.split(":").map(Number);
+    const cur = now.getHours() * 60 + now.getMinutes();
+    const start = sh * 60 + sm;
+    const end = eh * 60 + em;
+    return start <= end ? cur >= start && cur < end : cur >= start || cur < end;
+  })();
 
   const toggle = (
     label: string,
@@ -123,59 +158,6 @@ export default function SettingsPanel({
 
       <hr className="my-4 border-border" />
 
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="text-xs uppercase tracking-wider text-muted">
-            Brand context for ad copy
-          </div>
-          <button
-            onClick={async () => {
-              await fetch("/api/settings", {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ onboarding_completed: "0" }),
-              });
-              onChange();
-              location.reload();
-            }}
-            className="text-xs text-accent hover:underline"
-          >
-            Re-run onboarding
-          </button>
-        </div>
-        {settings.brand_description ? (
-          <div className="text-xs text-gray-300 bg-bg border border-border rounded-md px-3 py-2 space-y-1">
-            {settings.brand_tagline && (
-              <div>
-                <span className="text-muted">Tagline:</span>{" "}
-                {settings.brand_tagline}
-              </div>
-            )}
-            <div>
-              <span className="text-muted">About:</span>{" "}
-              {settings.brand_description}
-            </div>
-            {settings.brand_voice && (
-              <div>
-                <span className="text-muted">Voice:</span> {settings.brand_voice}
-              </div>
-            )}
-            {settings.brand_value_props && (
-              <div>
-                <span className="text-muted">Props:</span>{" "}
-                {settings.brand_value_props.split("|").join(" · ")}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="text-xs text-muted italic">
-            No brand context yet — re-run onboarding to populate.
-          </div>
-        )}
-      </div>
-
-      <hr className="my-4 border-border" />
-
       <div className="space-y-1">
         <div className="text-xs uppercase tracking-wider text-muted mb-1">
           Actions on OOS
@@ -199,6 +181,104 @@ export default function SettingsPanel({
           whatsapp,
           setWhatsapp,
           "COMING SOON"
+        )}
+      </div>
+
+      <hr className="my-4 border-border" />
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="text-xs uppercase tracking-wider text-muted">
+            Quiet hours / DND
+          </div>
+          {quietEnabled && (
+            <span
+              className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${
+                inQuietNow
+                  ? "border-violet-400/40 text-violet-300 bg-violet-400/10"
+                  : "border-accent/40 text-accent bg-accent/5"
+              }`}
+            >
+              {inQuietNow ? "🌙 Quiet now" : "Active"}
+            </span>
+          )}
+        </div>
+
+        <label className="flex items-start gap-3 cursor-pointer py-2">
+          <input
+            type="checkbox"
+            checked={quietEnabled}
+            onChange={(e) => setQuietEnabled(e.target.checked)}
+            className="mt-1 w-4 h-4 accent-accent"
+          />
+          <div className="flex-1">
+            <div className="text-sm font-medium">Suppress non-critical alerts</div>
+            <div className="text-xs text-muted mt-0.5">
+              During the window below, Slack/WhatsApp pings are batched into a digest instead of firing live.
+            </div>
+          </div>
+        </label>
+
+        {quietEnabled && (
+          <>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-muted">
+                  From
+                </label>
+                <input
+                  type="time"
+                  value={quietStart}
+                  onChange={(e) => setQuietStart(e.target.value)}
+                  className="mt-1 w-full bg-bg border border-border rounded-md px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-muted">
+                  Until
+                </label>
+                <input
+                  type="time"
+                  value={quietEnd}
+                  onChange={(e) => setQuietEnd(e.target.value)}
+                  className="mt-1 w-full bg-bg border border-border rounded-md px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <label className="flex items-start gap-3 cursor-pointer py-2">
+              <input
+                type="checkbox"
+                checked={quietBypassCritical}
+                onChange={(e) => setQuietBypassCritical(e.target.checked)}
+                className="mt-1 w-4 h-4 accent-accent"
+              />
+              <div className="flex-1">
+                <div className="text-sm font-medium">
+                  Bypass for critical strikes
+                </div>
+                <div className="text-xs text-muted mt-0.5">
+                  Always page if attributed revenue is projected ≥ ₹{Number(criticalThreshold).toLocaleString("en-IN")}.
+                </div>
+              </div>
+            </label>
+
+            {quietBypassCritical && (
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-muted">
+                  Critical revenue threshold (₹)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  step={1000}
+                  value={criticalThreshold}
+                  onChange={(e) => setCriticalThreshold(e.target.value)}
+                  className="mt-1 w-full bg-bg border border-border rounded-md px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none"
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
 

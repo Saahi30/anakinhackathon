@@ -2,11 +2,20 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import MonitorList from "./MonitorList";
-import EventFeed from "./EventFeed";
+import MonitoringFeed from "./MonitoringFeed";
 import SettingsPanel from "./SettingsPanel";
 import AddMonitor from "./AddMonitor";
 import StatsBar from "./StatsBar";
 import Onboarding from "./Onboarding";
+import BrandSummary from "./BrandSummary";
+import AlertHistory from "./AlertHistory";
+import NeedsReviewQueue from "./NeedsReviewQueue";
+import SparklinesPanel from "./SparklinesPanel";
+import StrikesPanel from "./StrikesPanel";
+import PlaybooksPanel from "./PlaybooksPanel";
+import IntegrationsPanel from "./IntegrationsPanel";
+import InsightsPanel from "./InsightsPanel";
+import WarRoom from "./WarRoom";
 import { supabaseBrowser } from "@/lib/supabase";
 
 export type Monitor = {
@@ -37,12 +46,28 @@ export type Event = {
   monitor_url: string | null;
 };
 
+type Tab =
+  | "monitoring"
+  | "feed"
+  | "strikes"
+  | "playbooks"
+  | "integrations"
+  | "insights"
+  | "alerts"
+  | "review"
+  | "settings";
+
 export default function Dashboard() {
   const [monitors, setMonitors] = useState<Monitor[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [realtimeOk, setRealtimeOk] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+  const [tab, setTab] = useState<Tab>("monitoring");
+  const [warRoom, setWarRoom] = useState<{
+    monitor: Monitor;
+    event: Event | null;
+  } | null>(null);
   const monitorsRef = useRef<Monitor[]>([]);
   monitorsRef.current = monitors;
 
@@ -51,7 +76,7 @@ export default function Dashboard() {
     setMonitors(r.monitors || []);
   }
   async function refreshEvents() {
-    const r = await fetch("/api/events?limit=80").then((r) => r.json());
+    const r = await fetch("/api/events?limit=120").then((r) => r.json());
     setEvents(r.events || []);
   }
   async function refreshSettings() {
@@ -70,7 +95,6 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Realtime subscriptions — events + monitors
   useEffect(() => {
     let supabase: ReturnType<typeof supabaseBrowser>;
     try {
@@ -101,7 +125,6 @@ export default function Dashboard() {
             monitor_url: m?.url ?? null,
           };
           setEvents((prev) => [enriched, ...prev].slice(0, 200));
-          // Refetch monitors on transitions, since their last_status changes too.
           if (
             e.kind === "oos_detected" ||
             e.kind === "back_in_stock" ||
@@ -143,6 +166,39 @@ export default function Dashboard() {
     return { total, oos, inStock, recentOos };
   }, [monitors, events]);
 
+  async function reRunOnboarding() {
+    await fetch("/api/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ onboarding_completed: "0" }),
+    });
+    setShowOnboarding(true);
+  }
+
+  const tabs: { id: Tab; label: string; badge?: string }[] = [
+    { id: "monitoring", label: "Monitoring" },
+    { id: "feed", label: "Live feed" },
+    {
+      id: "strikes",
+      label: "Strikes",
+      badge: stats.oos > 0 ? String(stats.oos) : undefined,
+    },
+    { id: "playbooks", label: "Playbooks" },
+    { id: "integrations", label: "Integrations" },
+    { id: "insights", label: "Insights" },
+    { id: "alerts", label: "Alert history" },
+    { id: "review", label: "Needs review" },
+    { id: "settings", label: "Settings" },
+  ];
+
+  const openWarRoom = (m: Monitor) => {
+    const ev =
+      events.find(
+        (e) => e.monitor_id === m.id && e.kind === "oos_detected"
+      ) || null;
+    setWarRoom({ monitor: m, event: ev });
+  };
+
   return (
     <div className="min-h-screen">
       {showOnboarding && (
@@ -150,6 +206,7 @@ export default function Dashboard() {
           onDone={() => {
             setShowOnboarding(false);
             refreshSettings();
+            refreshMonitors();
           }}
           onSkip={async () => {
             await fetch("/api/settings", {
@@ -178,6 +235,15 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {stats.oos > 0 && (
+              <button
+                onClick={() => setTab("strikes")}
+                className="inline-flex items-center gap-1.5 text-xs text-danger px-2 py-1 rounded border border-danger/40 bg-danger/10 hover:bg-danger/20 transition"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse" />
+                {stats.oos} live strike{stats.oos === 1 ? "" : "s"}
+              </button>
+            )}
             <span
               className={`inline-flex items-center gap-1.5 text-xs ${realtimeOk ? "text-accent" : "text-muted"}`}
               title={
@@ -207,36 +273,107 @@ export default function Dashboard() {
             </button>
           </div>
         </div>
+        <div className="max-w-7xl mx-auto px-6">
+          <nav className="flex gap-1 overflow-x-auto">
+            {tabs.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`px-3 py-2 text-xs font-medium border-b-2 transition shrink-0 inline-flex items-center gap-1.5 ${
+                  tab === t.id
+                    ? "border-accent text-accent"
+                    : "border-transparent text-muted hover:text-gray-200"
+                }`}
+              >
+                {t.label}
+                {t.badge && (
+                  <span className="text-[9px] px-1.5 rounded-full bg-danger/20 text-danger border border-danger/40">
+                    {t.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
+        </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-6 space-y-6">
         <StatsBar stats={stats} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
-          <div className="space-y-6">
-            <AddMonitor onAdded={refreshMonitors} />
-            <MonitorList monitors={monitors} onChange={refreshMonitors} />
-          </div>
+        {(tab === "monitoring" || tab === "feed") && (
+          <SparklinesPanel totalStrikes={stats.recentOos} />
+        )}
 
-          <div className="space-y-6">
-            <SettingsPanel settings={settings} onChange={refreshSettings} />
-            <EventFeed events={events} />
+        {tab === "monitoring" && (
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
+            <div className="space-y-6">
+              <AddMonitor onAdded={refreshMonitors} />
+              <MonitorList
+                monitors={monitors}
+                onChange={refreshMonitors}
+                onOpenWarRoom={openWarRoom}
+              />
+            </div>
+            <div className="space-y-6">
+              <BrandSummary onReRun={reRunOnboarding} />
+              <NeedsReviewQueue events={events} />
+            </div>
           </div>
-        </div>
+        )}
+
+        {tab === "feed" && (
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
+            <MonitoringFeed events={events} />
+            <BrandSummary onReRun={reRunOnboarding} />
+          </div>
+        )}
+
+        {tab === "strikes" && (
+          <StrikesPanel events={events} monitors={monitors} />
+        )}
+
+        {tab === "playbooks" && <PlaybooksPanel />}
+
+        {tab === "integrations" && <IntegrationsPanel />}
+
+        {tab === "insights" && <InsightsPanel monitors={monitors} />}
+
+        {tab === "alerts" && (
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
+            <AlertHistory events={events} />
+            <NeedsReviewQueue events={events} />
+          </div>
+        )}
+
+        {tab === "review" && (
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
+            <NeedsReviewQueue events={events} />
+            <MonitoringFeed events={events.slice(0, 30)} />
+          </div>
+        )}
+
+        {tab === "settings" && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <SettingsPanel settings={settings} onChange={refreshSettings} />
+            <BrandSummary onReRun={reRunOnboarding} />
+          </div>
+        )}
 
         <footer className="text-xs text-muted text-center pt-6 pb-12">
-          Powered by{" "}
-          <a
-            href="https://anakin.io"
-            className="text-accent hover:underline"
-            target="_blank"
-            rel="noreferrer"
-          >
-            anakin.io
-          </a>{" "}
-          · Supabase Realtime · Slack alerts · Groq Llama 3.3 70B for ad copy
+          Onboarding: <span className="text-accent">Anakin</span> scrapes brand &
+          listings · <span className="text-accent">Groq</span> extracts brand
+          profile · <span className="text-accent">Rainforest</span> finds Amazon
+          competitors · <span className="text-accent">Slack</span> alerts on OOS
         </footer>
       </main>
+
+      {warRoom && (
+        <WarRoom
+          monitor={warRoom.monitor}
+          event={warRoom.event}
+          onClose={() => setWarRoom(null)}
+        />
+      )}
     </div>
   );
 }

@@ -27,13 +27,33 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000). The "realtime" pill in the header turns green when the dashboard has subscribed to Supabase Realtime.
 
-## How it works
+## Product flow
 
-1. Add competitor product URLs from the dashboard.
-2. The polling worker (`src/lib/worker.ts`) wakes every `POLL_INTERVAL_SECONDS` and picks up to 5 due monitors per tick.
-3. For each, it calls `scrapeUrl()` which submits the URL to anakin and polls until the job completes.
-4. Per-platform regex rules in `src/lib/platforms.ts` detect `out_of_stock` / `in_stock` from the markdown + cleaned HTML.
-5. On a transition into `out_of_stock`, we fire a Slack alert. If `auto_ad_copy` is on, Groq writes a 2-line ad copy and we attach it to the Slack message.
+The end-to-end flow is a 7-step onboarding wizard followed by continuous monitoring.
+
+1. **Brand setup** — choose manual entry, auto-fill from a brand website, or auto-fill from a marketplace listing. Auto-fill uses **Anakin URL Scraper API** to scrape the page and **Groq** to extract a brand profile draft.
+2. **Brand review** — every AI-filled field is editable. The user must confirm before continuing (mandatory because scraping/AI can be wrong).
+3. **Product import** — add product listings individually OR upload a CSV. CSV is validated and previewed before commit. Template is downloadable from `/api/products/import-csv`.
+4. **Enrichment** — each imported product is scraped via **Anakin** and normalized with **Groq** into title, price, category, rating, review count, seller, and attributes. Re-runnable per product.
+5. **Competitor discovery** — for each product, **Rainforest API** searches Amazon for likely competitors. Internal scoring ranks them by title similarity, keyword overlap, category match, price band, and rating profile.
+6. **Competitor review** — approve, reject, edit, prioritize, or remove each candidate. Manual fallback at every product (paste a URL directly) for when discovery misses or fails.
+7. **Activation** — approved competitors become monitors. The polling worker scrapes them via **Anakin** repeatedly; Slack pings on every real `in_stock → out_of_stock` transition. Optional Groq ad-copy is attached to each alert.
+
+External tools used:
+
+- **Anakin URL Scraper API** — brand site scrape, product enrichment scrape, repeated competitor monitoring scrape
+- **Groq API** — brand profile synthesis, product field normalization, ad-copy generation
+- **Rainforest API** — Amazon competitor discovery (search + product data in JSON)
+- **Slack Incoming Webhooks** — real-time OOS alert delivery
+
+## Dashboard
+
+After onboarding, the dashboard has five tabs:
+- **Monitoring** — competitor monitor list with current stock state, plus a quick-add manual fallback
+- **Live feed** — timeline of brand setup, product import, competitor approval, scrape complete, OOS detected, Slack alert sent
+- **Alert history** — past OOS events and Slack delivery status
+- **Needs review** — low-confidence brand extraction, failed enrichments, weak competitor matches, scrape errors
+- **Settings** — Slack webhook, poll interval, ad-copy toggle, brand context
 
 ## Demo flow for judges
 
@@ -46,17 +66,24 @@ Open [http://localhost:3000](http://localhost:3000). The "realtime" pill in the 
 ## File map
 
 - `src/app/page.tsx` — entry, renders `Dashboard`
-- `src/components/*` — UI: dashboard, monitor list, event feed, settings, add monitor
-- `src/app/api/*` — REST endpoints for monitors, events, settings, slack-test
-- `src/lib/supabase.ts` — Supabase client (service-role for server, anon for browser/Realtime)
-- `src/lib/db.ts` — Supabase queries (monitors, events, settings)
-- `supabase/migrations/` — schema migrations (`npx supabase db push` to apply)
-- `src/lib/anakin.ts` — anakin URL Scraper client
-- `src/lib/platforms.ts` — platform detection + OOS regex rules
+- `src/components/Onboarding.tsx` + `src/components/onboarding/*` — 7-step wizard
+- `src/components/Dashboard.tsx` — tabbed dashboard (monitoring / feed / alerts / review / settings)
+- `src/components/{MonitoringFeed,AlertHistory,NeedsReviewQueue,BrandSummary}.tsx` — dashboard widgets
+- `src/app/api/brand/*` — brand profile read/update
+- `src/app/api/onboard/extract/*` — Anakin + Groq brand draft extraction
+- `src/app/api/products/*` — product CRUD, CSV import, enrichment
+- `src/app/api/competitors/*` — competitor list, manual add, approve/reject, activate-as-monitor
+- `src/app/api/monitors/*` — existing monitor endpoints
+- `src/lib/anakin.ts` — Anakin URL Scraper client
+- `src/lib/rainforest.ts` — Rainforest Amazon search/product client
+- `src/lib/scoring.ts` — competitor scoring (title sim · price band · category · rating)
+- `src/lib/csv.ts` — CSV parser + product template
+- `src/lib/groq.ts` — Groq brand-profile, product-info, and ad-copy helpers
+- `src/lib/db.ts` — Supabase queries (brand_profile, products, competitors, monitors, events, settings)
 - `src/lib/worker.ts` — polling loop, OOS transition logic, alert firing
 - `src/lib/slack.ts` — Slack webhook formatter
-- `src/lib/groq.ts` — Groq ad-copy generator
 - `src/instrumentation.ts` — boots the worker on Next.js startup
+- `supabase/migrations/` — schema migrations (`npx supabase db push` to apply)
 
 ## Notes on detection
 

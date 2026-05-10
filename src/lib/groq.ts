@@ -109,6 +109,93 @@ Return the JSON now.`;
   }
 }
 
+export type ProductInfo = {
+  title: string;
+  category: string;
+  price: string;
+  rating: string;
+  review_count: string;
+  seller: string;
+  attributes: string[];
+};
+
+export async function extractProductInfo(
+  pageMarkdown: string,
+  url: string
+): Promise<ProductInfo | null> {
+  const system = `You extract structured product information from a marketplace product page.
+Return STRICT JSON only with these exact keys (no extras, no commentary, no markdown fences):
+{
+  "title": "string (product title, max 140 chars)",
+  "category": "string (single short category, e.g. 't-shirts', 'protein powder', empty if unknown)",
+  "price": "string (price as shown, e.g. '₹1,499', empty if unknown)",
+  "rating": "string (e.g. '4.3', empty if unknown)",
+  "review_count": "string (e.g. '1,204', empty if unknown)",
+  "seller": "string (seller or platform hint, e.g. 'Cloudtail', empty if unknown)",
+  "attributes": ["array of 0-6 short attribute strings, max 6 words each, e.g. '100% cotton', 'pack of 3'"]
+}
+Use only information present in the source content. Do not invent facts.`;
+
+  const user = `URL: ${url}
+
+Source content:
+"""
+${pageMarkdown}
+"""
+
+Return the JSON now.`;
+
+  const raw = await chat(
+    [
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ],
+    { temperature: 0.2, maxTokens: 600, jsonMode: true }
+  );
+  if (!raw) return null;
+
+  try {
+    const cleaned = raw
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```\s*$/i, "")
+      .trim();
+    const parsed = JSON.parse(cleaned);
+    return {
+      title: String(parsed.title || "").trim(),
+      category: String(parsed.category || "").trim(),
+      price: String(parsed.price || "").trim(),
+      rating: String(parsed.rating || "").trim(),
+      review_count: String(parsed.review_count || "").trim(),
+      seller: String(parsed.seller || "").trim(),
+      attributes: Array.isArray(parsed.attributes)
+        ? parsed.attributes.map((x: any) => String(x).trim()).filter(Boolean)
+        : [],
+    };
+  } catch (e) {
+    console.error("[groq] product extract parse fail:", raw.slice(0, 200));
+    return null;
+  }
+}
+
+export async function explainCompetitorMatch(
+  brandProductTitle: string,
+  candidateTitle: string,
+  reasonHints: string[]
+): Promise<string | null> {
+  const system = `You write one short sentence (max 18 words) explaining why a candidate Amazon product is likely a competitor for a brand's own product. Plain text. No quotes. No emojis.`;
+  const user = `Our product: ${brandProductTitle}
+Candidate: ${candidateTitle}
+Signals: ${reasonHints.join(", ") || "loose match"}
+Write the one-line reason now.`;
+  return await chat(
+    [
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ],
+    { temperature: 0.4, maxTokens: 60 }
+  );
+}
+
 export type AdCopyInput = {
   brand: string;
   competitor: string;
