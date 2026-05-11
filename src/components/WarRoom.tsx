@@ -155,12 +155,12 @@ export default function WarRoom({
 
           {/* Hero countdown */}
           <div className="rounded-clay bg-brand-coral text-white p-10 mb-8 shadow-clay-lift">
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-6 items-end">
-              <div>
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-6 items-end">
+              <div className="min-w-0">
                 <div className="text-[11px] uppercase tracking-[0.18em] text-white/80 font-semibold mb-4">
                   Competitor out of stock
                 </div>
-                <h2 className="font-display text-5xl tracking-display text-white mb-2 break-words leading-[1.05]">
+                <h2 className="font-display text-5xl tracking-display text-white mb-2 break-all leading-[1.05]">
                   {monitor.label || monitor.url}
                 </h2>
                 <a

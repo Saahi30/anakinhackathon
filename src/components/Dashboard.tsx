@@ -428,8 +428,8 @@ export default function Dashboard() {
         )}
 
         {tab === "monitoring" && (
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
-            <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6">
+            <div className="min-w-0 space-y-6">
               <AddMonitor onAdded={refreshMonitors} />
               <MonitorList
                 monitors={monitors}
@@ -437,7 +437,7 @@ export default function Dashboard() {
                 onOpenWarRoom={openWarRoom}
               />
             </div>
-            <div className="space-y-6">
+            <div className="min-w-0 space-y-6">
               <BrandSummary onReRun={reRunOnboarding} />
               <NeedsReviewQueue events={events} />
             </div>
@@ -445,9 +445,13 @@ export default function Dashboard() {
         )}
 
         {tab === "feed" && (
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
-            <MonitoringFeed events={events} />
-            <BrandSummary onReRun={reRunOnboarding} />
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6">
+            <div className="min-w-0">
+              <MonitoringFeed events={events} />
+            </div>
+            <div className="min-w-0">
+              <BrandSummary onReRun={reRunOnboarding} />
+            </div>
           </div>
         )}
 
@@ -462,16 +466,24 @@ export default function Dashboard() {
         {tab === "insights" && <InsightsPanel monitors={monitors} />}
 
         {tab === "alerts" && (
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
-            <AlertHistory events={events} />
-            <NeedsReviewQueue events={events} />
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6">
+            <div className="min-w-0">
+              <AlertHistory events={events} />
+            </div>
+            <div className="min-w-0">
+              <NeedsReviewQueue events={events} />
+            </div>
           </div>
         )}
 
         {tab === "review" && (
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
-            <NeedsReviewQueue events={events} />
-            <MonitoringFeed events={events.slice(0, 30)} />
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6">
+            <div className="min-w-0">
+              <NeedsReviewQueue events={events} />
+            </div>
+            <div className="min-w-0">
+              <MonitoringFeed events={events.slice(0, 30)} />
+            </div>
           </div>
         )}
 

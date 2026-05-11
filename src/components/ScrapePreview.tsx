@@ -113,10 +113,10 @@ export default function ScrapePreview({
         </div>
         <div
           ref={ref}
-          className="bg-surface-dark font-mono text-xs p-4 h-80 overflow-y-auto"
+          className="bg-surface-dark font-mono text-xs p-4 h-80 overflow-y-auto overflow-x-hidden"
         >
           {lines.map((l, i) => (
-            <div key={i} className={`${toneClass[l.tone]} leading-relaxed`}>
+            <div key={i} className={`${toneClass[l.tone]} leading-relaxed break-all`}>
               {l.text}
             </div>
           ))}
