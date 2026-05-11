@@ -70,6 +70,13 @@ export default function Dashboard() {
   } | null>(null);
   const monitorsRef = useRef<Monitor[]>([]);
   monitorsRef.current = monitors;
+  const [slackTestOpen, setSlackTestOpen] = useState(false);
+  const [slackTestUrl, setSlackTestUrl] = useState("");
+  const [slackTestBusy, setSlackTestBusy] = useState(false);
+  const [slackTestResult, setSlackTestResult] = useState<
+    { ok: boolean; message: string } | null
+  >(null);
+  const slackTestRef = useRef<HTMLDivElement>(null);
 
   async function refreshMonitors() {
     const r = await fetch("/api/monitors").then((r) => r.json());
@@ -94,6 +101,59 @@ export default function Dashboard() {
     refreshSettings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (slackTestOpen && !slackTestUrl) {
+      setSlackTestUrl(settings.slack_webhook_url || "");
+    }
+  }, [slackTestOpen, settings.slack_webhook_url, slackTestUrl]);
+
+  useEffect(() => {
+    if (!slackTestOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (!slackTestRef.current) return;
+      if (!slackTestRef.current.contains(e.target as Node)) {
+        setSlackTestOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSlackTestOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [slackTestOpen]);
+
+  async function sendSlackTest() {
+    setSlackTestBusy(true);
+    setSlackTestResult(null);
+    try {
+      const r = await fetch("/api/slack-test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ webhook_url: slackTestUrl || null }),
+      });
+      const data = await r.json();
+      if (data.ok) {
+        setSlackTestResult({ ok: true, message: "Sent ✓" });
+      } else {
+        setSlackTestResult({
+          ok: false,
+          message: data.error || `failed (${data.status || r.status})`,
+        });
+      }
+    } catch (e: any) {
+      setSlackTestResult({
+        ok: false,
+        message: e?.message || "request failed",
+      });
+    } finally {
+      setSlackTestBusy(false);
+    }
+  }
 
   useEffect(() => {
     let supabase: ReturnType<typeof supabaseBrowser>;
@@ -263,20 +323,71 @@ export default function Dashboard() {
               />
               {realtimeOk ? "realtime" : "offline"}
             </span>
-            <button
-              onClick={async () => {
-                const r = await fetch("/api/slack-test", { method: "POST" });
-                const data = await r.json();
-                alert(
-                  data.ok
-                    ? "Slack test sent ✓"
-                    : `Slack failed: ${data.error || data.status}`
-                );
-              }}
-              className="px-4 py-1.5 text-xs font-medium rounded-full bg-ink text-white hover:bg-ink/90 transition"
-            >
-              Send Slack test
-            </button>
+            <div className="relative" ref={slackTestRef}>
+              <button
+                onClick={() => {
+                  setSlackTestOpen((o) => !o);
+                  setSlackTestResult(null);
+                }}
+                className={`px-4 py-1.5 text-xs font-medium rounded-full transition ${
+                  slackTestOpen
+                    ? "bg-canvas text-ink border border-ink"
+                    : "bg-ink text-white hover:bg-ink/90"
+                }`}
+              >
+                Send Slack test
+              </button>
+              {slackTestOpen && (
+                <div className="absolute right-0 top-full mt-2 w-[360px] rounded-clay bg-panel border border-hairline shadow-clay-lift p-5 z-20">
+                  <div className="text-[11px] uppercase tracking-[0.16em] text-muted font-semibold">
+                    Test your Slack webhook
+                  </div>
+                  <div className="font-display text-lg tracking-tightish text-ink mt-1 leading-snug">
+                    Paste a webhook URL to send a test alert.
+                  </div>
+                  <input
+                    type="url"
+                    value={slackTestUrl}
+                    onChange={(e) => {
+                      setSlackTestUrl(e.target.value);
+                      setSlackTestResult(null);
+                    }}
+                    placeholder="https://hooks.slack.com/services/..."
+                    autoFocus
+                    className="mt-3 w-full bg-canvas border border-hairline rounded-2xl px-3.5 py-2.5 text-xs font-mono text-ink placeholder:text-muted-soft focus:border-ink focus:outline-none transition"
+                  />
+                  <div className="text-[10px] text-muted mt-1.5 leading-relaxed">
+                    Leave empty to use the URL saved in Settings.
+                  </div>
+                  <div className="flex items-center gap-2 mt-4">
+                    <button
+                      onClick={sendSlackTest}
+                      disabled={slackTestBusy}
+                      className="flex-1 px-4 py-2 text-xs font-medium rounded-full bg-ink text-white hover:bg-ink/90 disabled:opacity-50 transition"
+                    >
+                      {slackTestBusy ? "Sending…" : "Send test alert"}
+                    </button>
+                    <button
+                      onClick={() => setSlackTestOpen(false)}
+                      className="px-4 py-2 text-xs rounded-full bg-soft text-ink hover:bg-strong transition"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  {slackTestResult && (
+                    <div
+                      className={`mt-3 text-xs px-3 py-2 rounded-2xl ${
+                        slackTestResult.ok
+                          ? "bg-brand-mint/40 text-brand-teal"
+                          : "bg-brand-coral/15 text-brand-coral"
+                      }`}
+                    >
+                      {slackTestResult.message}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
         <div className="max-w-7xl mx-auto px-8 pb-3">

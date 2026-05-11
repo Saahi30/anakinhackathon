@@ -10,6 +10,7 @@ export type SlackAlert = {
   adCopy?: string | null;
   whatsappEnabled?: boolean;
   adsBidSurgeEnabled?: boolean;
+  webhookOverride?: string | null;
 };
 
 export async function sendSlackAlert(alert: SlackAlert): Promise<{
@@ -18,9 +19,13 @@ export async function sendSlackAlert(alert: SlackAlert): Promise<{
   error?: string;
 }> {
   const webhook =
+    (alert.webhookOverride && alert.webhookOverride.trim()) ||
     (await getSettingAsync("slack_webhook_url")) ||
     process.env.SLACK_WEBHOOK_URL;
   if (!webhook) return { ok: false, error: "no slack webhook configured" };
+  if (!/^https:\/\/hooks\.slack\.com\//.test(webhook)) {
+    return { ok: false, error: "invalid Slack webhook URL" };
+  }
 
   const oosLabel =
     alert.oosForMinutes < 1
