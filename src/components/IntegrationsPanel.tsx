@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Integration = {
   key: string;
@@ -24,7 +24,6 @@ const ITEMS: Integration[] = [
     logo: "#",
     logoBg: "bg-[#4A154B]",
     logoColor: "text-white",
-    defaultConnected: true,
   },
   {
     key: "discord",
@@ -171,11 +170,116 @@ const ITEMS: Integration[] = [
 
 const CATEGORIES = ["Channels", "Ad platforms", "Automation", "Analytics"] as const;
 
+function isSlackWebhook(url: string): boolean {
+  if (!url) return false;
+  try {
+    const u = new URL(url.trim());
+    return (
+      u.protocol === "https:" &&
+      (u.hostname === "hooks.slack.com" || u.hostname.endsWith(".slack.com"))
+    );
+  } catch {
+    return false;
+  }
+}
+
 export default function IntegrationsPanel() {
   const [connected, setConnected] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(ITEMS.map((i) => [i.key, !!i.defaultConnected]))
   );
   const [filter, setFilter] = useState<string>("All");
+  const [slackWebhook, setSlackWebhook] = useState<string>("");
+  const [slackPromptOpen, setSlackPromptOpen] = useState(false);
+  const [slackDraft, setSlackDraft] = useState("");
+  const [slackError, setSlackError] = useState<string | null>(null);
+  const [slackSaving, setSlackSaving] = useState(false);
+
+  // Load saved Slack webhook on mount; derive connected state from it.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        const saved = (d?.settings?.slack_webhook_url || "").trim();
+        setSlackWebhook(saved);
+        setConnected((c) => ({ ...c, slack: !!saved }));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!slackPromptOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSlackPromptOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [slackPromptOpen]);
+
+  async function saveSlackWebhook() {
+    const url = slackDraft.trim();
+    if (!url) {
+      setSlackError("Slack webhook URL is required to connect.");
+      return;
+    }
+    if (!isSlackWebhook(url)) {
+      setSlackError("Must be an https://hooks.slack.com/... URL.");
+      return;
+    }
+    setSlackSaving(true);
+    setSlackError(null);
+    try {
+      const r = await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slack_webhook_url: url }),
+      });
+      if (!r.ok) {
+        setSlackError("Failed to save webhook. Try again.");
+        return;
+      }
+      setSlackWebhook(url);
+      setConnected((c) => ({ ...c, slack: true }));
+      setSlackPromptOpen(false);
+      setSlackDraft("");
+    } finally {
+      setSlackSaving(false);
+    }
+  }
+
+  async function disconnectSlack() {
+    setSlackSaving(true);
+    setSlackError(null);
+    try {
+      await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slack_webhook_url: "" }),
+      });
+      setSlackWebhook("");
+      setConnected((c) => ({ ...c, slack: false }));
+    } finally {
+      setSlackSaving(false);
+    }
+  }
+
+  function handleToggle(itemKey: string) {
+    if (itemKey === "slack") {
+      if (connected.slack) {
+        disconnectSlack();
+      } else {
+        setSlackDraft(slackWebhook || "");
+        setSlackError(null);
+        setSlackPromptOpen(true);
+      }
+      return;
+    }
+    setConnected((c) => ({ ...c, [itemKey]: !c[itemKey] }));
+  }
 
   const visible = ITEMS.filter((i) => filter === "All" || i.category === filter);
 
@@ -249,18 +353,80 @@ export default function IntegrationsPanel() {
               <p className="text-sm text-muted mt-2 leading-relaxed">
                 {item.description}
               </p>
+              {item.key === "slack" && isOn && slackWebhook && (
+                <div className="mt-3 text-[10px] text-muted font-mono truncate" title={slackWebhook}>
+                  {slackWebhook.replace(/(\/services\/.{4}).+/, "$1•••")}
+                </div>
+              )}
               <button
-                onClick={() =>
-                  setConnected((c) => ({ ...c, [item.key]: !c[item.key] }))
-                }
-                className={`mt-5 w-full text-sm py-2.5 rounded-full font-medium transition ${
+                onClick={() => handleToggle(item.key)}
+                disabled={item.key === "slack" && slackSaving}
+                className={`mt-5 w-full text-sm py-2.5 rounded-full font-medium transition disabled:opacity-50 ${
                   isOn
                     ? "bg-canvas border border-hairline text-ink hover:border-brand-coral hover:text-brand-coral"
                     : "bg-ink text-white hover:bg-ink/90"
                 }`}
               >
-                {isOn ? "Disconnect" : "Connect"}
+                {item.key === "slack" && slackSaving
+                  ? "Saving…"
+                  : isOn
+                    ? "Disconnect"
+                    : "Connect"}
               </button>
+
+              {item.key === "slack" && slackPromptOpen && !isOn && (
+                <div className="mt-4 rounded-2xl bg-soft border border-hairline p-4 space-y-2">
+                  <label className="text-[10px] uppercase tracking-[0.14em] text-muted font-semibold">
+                    Slack webhook URL
+                  </label>
+                  <input
+                    type="url"
+                    autoFocus
+                    required
+                    value={slackDraft}
+                    onChange={(e) => {
+                      setSlackDraft(e.target.value);
+                      setSlackError(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        saveSlackWebhook();
+                      }
+                    }}
+                    placeholder="https://hooks.slack.com/services/..."
+                    className="w-full bg-canvas border border-hairline rounded-2xl px-3 py-2 text-xs font-mono text-ink placeholder:text-muted-soft focus:border-ink focus:outline-none transition"
+                  />
+                  <div className="text-[10px] text-muted leading-relaxed">
+                    Required to connect Slack. Create one in your Slack app
+                    under <span className="font-mono">Incoming Webhooks</span>.
+                  </div>
+                  {slackError && (
+                    <div className="text-[11px] text-brand-coral">
+                      {slackError}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      onClick={saveSlackWebhook}
+                      disabled={slackSaving}
+                      className="flex-1 text-xs px-3 py-2 rounded-full bg-ink text-white hover:bg-ink/90 disabled:opacity-50 transition"
+                    >
+                      {slackSaving ? "Connecting…" : "Connect Slack"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSlackPromptOpen(false);
+                        setSlackError(null);
+                      }}
+                      disabled={slackSaving}
+                      className="text-xs px-3 py-2 rounded-full bg-canvas text-ink border border-hairline hover:bg-soft transition"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
