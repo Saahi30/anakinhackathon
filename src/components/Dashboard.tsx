@@ -238,12 +238,47 @@ export default function Dashboard() {
   }, [monitors, events]);
 
   async function reRunOnboarding() {
+    const alreadySet = settings.onboarding_completed === "1";
+    let wipeBrand = false;
+    if (alreadySet) {
+      wipeBrand = confirm(
+        `Test with a different brand?\n\nOK — clear the current brand profile (${settings.brand_name || "Your Brand"}) so the wizard starts blank.\nCancel — keep current data; just re-walk the wizard.`
+      );
+    }
+    if (wipeBrand) {
+      const blankBrand: Record<string, string> = {
+        brand_name: "",
+        brand_tagline: "",
+        brand_description: "",
+        brand_voice: "",
+        brand_categories: "",
+        brand_value_props: "",
+        brand_target_audience: "",
+        brand_website: "",
+        brand_source_url: "",
+        brand_marketplaces: "",
+        brand_regions: "",
+        brand_logo_url: "",
+        brand_notes: "",
+        source_type: "",
+        confidence: "",
+      };
+      await fetch("/api/brand", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(blankBrand),
+      });
+    }
     await fetch("/api/settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ onboarding_completed: "0" }),
+      body: JSON.stringify({
+        onboarding_completed: "0",
+        ...(wipeBrand ? { brand_name: "" } : {}),
+      }),
     });
     setShowOnboarding(true);
+    refreshSettings();
   }
 
   const tabs: { id: Tab; label: string; badge?: string }[] = [
@@ -334,6 +369,20 @@ export default function Dashboard() {
               />
               {realtimeOk ? "realtime" : "offline"}
             </span>
+            <button
+              onClick={reRunOnboarding}
+              title={
+                settings.onboarding_completed === "1"
+                  ? `Re-run the 7-step wizard to test with a different brand. Current: ${settings.brand_name || "Your Brand"}`
+                  : "Set up your brand, products, and competitors"
+              }
+              className="inline-flex items-center gap-2 px-4 py-1.5 text-xs font-medium rounded-full bg-brand-peach text-ink hover:bg-brand-peach/80 transition border border-ink/10 shadow-clay"
+            >
+              <span className="text-sm leading-none">⚡</span>
+              {settings.onboarding_completed === "1"
+                ? "Re-run onboarding"
+                : "Run onboarding"}
+            </button>
             <div className="relative" ref={slackTestRef}>
               <button
                 onClick={() => {
