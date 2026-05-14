@@ -50,7 +50,7 @@ export default function NeedsReviewQueue({ events }: { events: Event[] }) {
           id: `product-partial-${p.id}`,
           kind: "product",
           severity: "warn",
-          message: `Partial enrichment: ${p.title || p.url} — Groq returned no JSON`,
+          message: `Partial enrichment: ${p.title || p.url} — AI returned no JSON`,
           href: p.url,
         });
       }

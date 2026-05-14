@@ -18,13 +18,13 @@ function buildScript(url: string, platform: string): Line[] {
   })();
   const sessionId = "sess_" + Math.random().toString(36).slice(2, 10);
   return [
-    { text: `→ POST https://api.anakin.io/v1/scrape`, tone: "muted", delay: 60 },
+    { text: `→ POST /v1/scrape`, tone: "muted", delay: 60 },
     { text: `  X-API-Key: sk_live_••••••••••••${Math.floor(Math.random() * 9999)}`, tone: "muted", delay: 80 },
     { text: `  body: { url: "${url}", render: true, anti_bot: true }`, tone: "muted", delay: 90 },
     { text: `← 202 Accepted · job ${sessionId}`, tone: "info", delay: 120 },
-    { text: `[anakin] spinning up stealth Chromium 131…`, tone: "info", delay: 250 },
-    { text: `[anakin] residential proxy · region in-mum-1 · IP 103.×.×.42`, tone: "info", delay: 200 },
-    { text: `[anakin] navigating to ${host}`, tone: "info", delay: 320 },
+    { text: `[scraper] spinning up stealth Chromium 131…`, tone: "info", delay: 250 },
+    { text: `[scraper] residential proxy · region in-mum-1 · IP 103.×.×.42`, tone: "info", delay: 200 },
+    { text: `[scraper] navigating to ${host}`, tone: "info", delay: 320 },
     { text: `[anti-bot] cloudflare turnstile detected`, tone: "warn", delay: 200 },
     { text: `[anti-bot] solving challenge… `, tone: "warn", delay: 350 },
     { text: `[anti-bot] ✓ challenge passed in 1.2s`, tone: "good", delay: 280 },
@@ -101,7 +101,7 @@ export default function ScrapePreview({
               <div className="w-3 h-3 rounded-full bg-brand-mint" />
             </div>
             <span className="text-xs text-muted ml-2 font-mono">
-              anakin · live scrape
+              scraper · live
             </span>
           </div>
           <button
@@ -126,7 +126,7 @@ export default function ScrapePreview({
         </div>
         <div className="px-5 py-3 border-t border-hairline bg-soft flex items-center justify-between">
           <span className="text-[10px] uppercase tracking-[0.14em] text-muted">
-            Powered by anakin.io · stealth Chromium · residential proxy
+            Stealth Chromium · residential proxy
           </span>
           {done && (
             <span className="text-xs text-brand-teal flex items-center gap-1.5 font-medium">

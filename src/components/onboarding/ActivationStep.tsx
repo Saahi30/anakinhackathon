@@ -59,9 +59,9 @@ export default function ActivationStep({
           Monitoring {activatedCount} competitor{activatedCount === 1 ? "" : "s"}
         </div>
         <p className="text-sm text-muted">
-          Anakin will scrape each one repeatedly. The instant a competitor goes
-          out of stock, Slack gets pinged with a real-time alert and (optionally)
-          AI-generated ad copy.
+          The scraping engine will check each one repeatedly. The instant a
+          competitor goes out of stock, Slack gets pinged with a real-time
+          alert and (optionally) AI-generated ad copy.
         </p>
         <div className="flex justify-center gap-2 pt-2">
           <button
@@ -93,7 +93,7 @@ export default function ActivationStep({
       <p className="text-sm text-muted">
         Activate monitoring for the {stats.approved} approved competitor
         {stats.approved === 1 ? "" : "s"} across {stats.products} product
-        {stats.products === 1 ? "" : "s"}. Anakin URL Scraper polls each one,
+        {stats.products === 1 ? "" : "s"}. The scraping engine polls each one,
         and Slack Incoming Webhooks deliver real-time OOS alerts.
       </p>
 

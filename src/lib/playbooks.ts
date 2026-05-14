@@ -122,8 +122,8 @@ async function runAction(
         ...base,
         ok: variants.length > 0,
         detail: variants.length
-          ? `Groq returned ${variants.length} ad-copy variant${variants.length === 1 ? "" : "s"}`
-          : "Groq returned no variants (key missing or rate-limited)",
+          ? `AI returned ${variants.length} ad-copy variant${variants.length === 1 ? "" : "s"}`
+          : "AI returned no variants (key missing or rate-limited)",
       };
     }
     // Placeholder actions: log only. These are real wires in the event feed —

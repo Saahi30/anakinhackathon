@@ -67,10 +67,9 @@ export default function EnrichmentStep({
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted">
-        StockStrike scrapes each product via Anakin URL Scraper API and
-        normalizes the result with Groq — pulling title, price, category,
-        rating, review count, and seller hints. All AI fields are editable
-        afterward.
+        StockStrike scrapes each product page and normalizes the result with
+        AI — pulling title, price, category, rating, review count, and seller
+        hints. All AI fields are editable afterward.
       </p>
 
       <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-md border border-border bg-bg/40 text-xs">

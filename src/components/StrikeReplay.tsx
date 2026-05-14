@@ -21,9 +21,9 @@ type ReplayStep = {
 function buildSteps(durationMinutes: number): ReplayStep[] {
   const total = durationMinutes * 60;
   return [
-    { t: 0, kind: "oos", label: "OOS detected by anakin", detail: "regex: out of stock · confidence 94%" },
+    { t: 0, kind: "oos", label: "OOS detected by scraper", detail: "regex: out of stock · confidence 94%" },
     { t: 8, kind: "slack", label: "Slack alert sent", detail: "→ #stockstrike · 3 mentions" },
-    { t: 14, kind: "groq", label: "Ad copy generated", detail: "Groq Llama 3.3 70B · 1.1s" },
+    { t: 14, kind: "groq", label: "Ad copy generated", detail: "AI ad-copy engine · 1.1s" },
     { t: 22, kind: "meta", label: "Meta Ads bid surge +40%", detail: "ad set ms-summer-2026" },
     { t: 28, kind: "google", label: "Google Ads keywords surged", detail: "12 rival-brand keywords · CPC cap +25%" },
     { t: 34, kind: "amazon", label: "Amazon Sponsored bid +30%", detail: "ASIN B0XXXXXX · top-of-search" },

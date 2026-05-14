@@ -81,7 +81,7 @@ export default function InsightsPanel({
             {loading
               ? "…"
               : narrative?.generated
-                ? "Groq · live"
+                ? "AI · live"
                 : "Templated"}
           </span>
         </div>

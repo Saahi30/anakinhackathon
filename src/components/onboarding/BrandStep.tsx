@@ -72,7 +72,7 @@ export default function BrandStep({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Card
             title="Auto-fill from website"
-            desc="Paste your brand homepage. We scrape it via anakin and extract brand identity, products, and voice."
+            desc="Paste your brand homepage. We scrape it and use AI to extract brand identity, products, and voice."
             badge="Recommended"
             onClick={() => setMode("auto_website")}
           />
@@ -105,7 +105,7 @@ export default function BrandStep({
       </button>
       <p className="text-sm text-muted">
         {mode === "auto_website"
-          ? "Paste your brand homepage URL. We scrape it via Anakin and use Groq to extract your brand profile."
+          ? "Paste your brand homepage URL. We scrape it and use AI to extract your brand profile."
           : "Paste one of your marketplace product listing URLs. We scrape it and infer brand identity."}
       </p>
       <div>
@@ -153,7 +153,7 @@ export default function BrandStep({
         </button>
       </div>
       <div className="text-xs text-muted">
-        Powered by Anakin URL Scraper API + Groq Llama 3.3 70B. Takes ~5–15s.
+        Real-time scrape + AI extraction. Takes ~5–15s.
       </div>
     </div>
   );

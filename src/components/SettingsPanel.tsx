@@ -204,7 +204,7 @@ export default function SettingsPanel({
         </div>
         {toggle(
           "Auto-generate ad copy",
-          "When OOS detected, Groq Llama 3.3 70B writes ad copy and includes it in the Slack alert.",
+          "When OOS detected, our AI ad-copy engine writes the copy and includes it in the Slack alert.",
           autoAd,
           setAutoAd
         )}
@@ -286,7 +286,7 @@ export default function SettingsPanel({
         </div>
         {toggle(
           "Adaptive polling",
-          "Poll OOS-prone listings more often and stable ones less often. Spends Anakin credits where they matter.",
+          "Poll OOS-prone listings more often and stable ones less often. Spends scrape credits where they matter.",
           adaptivePolling,
           setAdaptivePolling
         )}

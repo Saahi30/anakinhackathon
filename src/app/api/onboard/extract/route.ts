@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   if (!extracted) {
     return NextResponse.json(
       {
-        error: "extraction failed (Groq returned no usable JSON)",
+        error: "extraction failed (AI returned no usable JSON)",
         needsManual: true,
       },
       { status: 502 }

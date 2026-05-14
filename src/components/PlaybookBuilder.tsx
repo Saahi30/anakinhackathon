@@ -46,7 +46,7 @@ export const ACTION_CATALOG: {
   { key: "meta", label: "Surge Meta Ads bid", tone: "blue", configHint: "Bid lift", configPlaceholder: "+40%" },
   { key: "google", label: "Bid up Google rival KWs", tone: "yellow", configHint: "Adjustment", configPlaceholder: "+30%" },
   { key: "amazon", label: "Increase Amazon SP", tone: "orange", configHint: "Bid lift", configPlaceholder: "+25%" },
-  { key: "groq", label: "Generate Groq ad copy", tone: "violet", configHint: "Variants", configPlaceholder: "3" },
+  { key: "groq", label: "Generate AI ad copy", tone: "violet", configHint: "Variants", configPlaceholder: "3" },
   { key: "email", label: "Send email digest entry", tone: "muted" },
   { key: "report", label: "Add to weekly digest", tone: "muted" },
   { key: "linear", label: "Open Linear issue", tone: "violet", configHint: "Project", configPlaceholder: "MKT" },

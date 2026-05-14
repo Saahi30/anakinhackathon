@@ -42,7 +42,7 @@ export default function UsageStrip() {
       </div>
       <div className="flex items-center gap-6 text-sm flex-wrap">
         <div>
-          <span className="text-muted text-xs">Anakin scrapes</span>{" "}
+          <span className="text-muted text-xs">Scrapes</span>{" "}
           <span className="font-display tabular-nums text-ink">
             {formatNum(data.today.anakin_scrapes)}
           </span>
@@ -51,7 +51,7 @@ export default function UsageStrip() {
           </span>
         </div>
         <div>
-          <span className="text-muted text-xs">Groq tokens</span>{" "}
+          <span className="text-muted text-xs">AI tokens</span>{" "}
           <span className="font-display tabular-nums text-ink">
             {formatNum(data.today.groq_tokens)}
           </span>

@@ -24,7 +24,7 @@ const SAMPLE: Playbook[] = [
       { key: "slack", label: "Post to Slack", config: "#marketing-strikes" },
       { key: "meta", label: "Surge Meta Ads bid", config: "+40%" },
       { key: "google", label: "Bid up Google rival KWs", config: "+30%" },
-      { key: "groq", label: "Generate Groq ad copy", config: "3" },
+      { key: "groq", label: "Generate AI ad copy", config: "3" },
     ],
     lastFired: "2026-05-09T14:21:00Z",
     fireCount: 24,

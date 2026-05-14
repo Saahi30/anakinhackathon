@@ -67,12 +67,12 @@ const KIND_DISPLAY: Record<string, { label: string; tone: string; description: s
   ad_copy: {
     label: "Ad copy generated",
     tone: "border-violet-500/60 bg-violet-500/10 text-violet-300",
-    description: "Groq Llama 3.3 70B",
+    description: "AI ad-copy engine",
   },
   check: {
     label: "Scrape completed",
     tone: "border-border bg-bg/40 text-gray-300",
-    description: "Anakin URL Scraper",
+    description: "URL scraper",
   },
 };
 

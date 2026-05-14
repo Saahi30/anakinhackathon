@@ -42,7 +42,7 @@ export async function POST(
     seller: info?.seller || null,
     attributes: info?.attributes || [],
     enrichment_status: info ? "enriched" : "partial",
-    enrichment_error: info ? null : "groq returned no JSON",
+    enrichment_error: info ? null : "AI returned no JSON",
   });
 
   return NextResponse.json({

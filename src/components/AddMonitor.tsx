@@ -94,7 +94,7 @@ export default function AddMonitor({ onAdded }: { onAdded: () => void }) {
           {error && <div className="text-brand-coral text-xs">{error}</div>}
           <div className="text-xs text-muted leading-relaxed">
             Skips discovery — useful when you already know the exact competitor
-            URL. Watch the live anakin scrape stream when you submit.
+            URL. Watch the live scrape stream when you submit.
           </div>
         </form>
       </section>

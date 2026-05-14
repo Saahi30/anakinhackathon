@@ -560,11 +560,11 @@ export default function Dashboard() {
             Capture homeless traffic the moment it appears.
           </div>
           <div className="text-sm text-muted max-w-2xl mx-auto leading-relaxed">
-            <span className="text-brand-teal font-medium">Anakin</span> scrapes
-            brand &amp; listings ·{" "}
-            <span className="text-brand-teal font-medium">Groq</span> extracts
-            the brand profile ·{" "}
-            <span className="text-brand-teal font-medium">Rainforest</span>{" "}
+            <span className="text-brand-teal font-medium">Real-time scraping</span>{" "}
+            of brand &amp; listings ·{" "}
+            <span className="text-brand-teal font-medium">AI</span> extracts the
+            brand profile ·{" "}
+            <span className="text-brand-teal font-medium">Marketplace search</span>{" "}
             finds Amazon competitors ·{" "}
             <span className="text-brand-teal font-medium">Slack</span> pings the
             moment a rival goes out of stock.
