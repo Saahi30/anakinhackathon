@@ -1,6 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import AdPlatformSetup, {
+  META_ADS_CONFIG,
+  GOOGLE_ADS_CONFIG,
+  type AdPlatformConfig,
+} from "./AdPlatformSetup";
 
 type Integration = {
   key: string;
@@ -80,7 +85,6 @@ const ITEMS: Integration[] = [
     logo: "Ⓜ",
     logoBg: "bg-[#0866FF]",
     logoColor: "text-white",
-    defaultConnected: true,
   },
   {
     key: "google_ads",
@@ -193,19 +197,31 @@ export default function IntegrationsPanel() {
   const [slackDraft, setSlackDraft] = useState("");
   const [slackError, setSlackError] = useState<string | null>(null);
   const [slackSaving, setSlackSaving] = useState(false);
+  const [adSetup, setAdSetup] = useState<AdPlatformConfig | null>(null);
 
-  // Load saved Slack webhook on mount; derive connected state from it.
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/settings")
+  // Load saved Slack webhook + ad-platform connection state on mount.
+  function refreshFromSettings() {
+    return fetch("/api/settings")
       .then((r) => r.json())
       .then((d) => {
-        if (cancelled) return;
-        const saved = (d?.settings?.slack_webhook_url || "").trim();
+        const s = d?.settings || {};
+        const saved = (s.slack_webhook_url || "").trim();
         setSlackWebhook(saved);
-        setConnected((c) => ({ ...c, slack: !!saved }));
+        setConnected((c) => ({
+          ...c,
+          slack: !!saved,
+          meta_ads: s.meta_connected === "1",
+          google_ads: s.google_connected === "1",
+        }));
       })
       .catch(() => {});
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    refreshFromSettings().then(() => {
+      if (cancelled) return;
+    });
     return () => {
       cancelled = true;
     };
@@ -278,6 +294,14 @@ export default function IntegrationsPanel() {
       }
       return;
     }
+    if (itemKey === "meta_ads") {
+      setAdSetup(META_ADS_CONFIG);
+      return;
+    }
+    if (itemKey === "google_ads") {
+      setAdSetup(GOOGLE_ADS_CONFIG);
+      return;
+    }
     setConnected((c) => ({ ...c, [itemKey]: !c[itemKey] }));
   }
 
@@ -313,6 +337,14 @@ export default function IntegrationsPanel() {
           ))}
         </div>
       </div>
+
+      {adSetup && (
+        <AdPlatformSetup
+          config={adSetup}
+          onClose={() => setAdSetup(null)}
+          onSaved={refreshFromSettings}
+        />
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {visible.map((item) => {
@@ -370,7 +402,9 @@ export default function IntegrationsPanel() {
                 {item.key === "slack" && slackSaving
                   ? "Saving…"
                   : isOn
-                    ? "Disconnect"
+                    ? item.key === "meta_ads" || item.key === "google_ads"
+                      ? "Configure"
+                      : "Disconnect"
                     : "Connect"}
               </button>
 

@@ -1,3 +1,5 @@
+import { bumpUsage } from "./db";
+
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 function model(): string {
@@ -32,6 +34,8 @@ async function chat(
       return null;
     }
     const data = await res.json();
+    const tokens = Number(data?.usage?.total_tokens) || 0;
+    if (tokens) bumpUsage({ groq: tokens }).catch(() => {});
     return data?.choices?.[0]?.message?.content?.trim() || null;
   } catch (e) {
     console.error("[groq] fetch failed", e);
@@ -211,14 +215,26 @@ export type AdCopyInput = {
 export async function generateAdCopy(
   input: AdCopyInput
 ): Promise<string | null> {
+  const variants = await generateAdCopyVariants(input, 1);
+  return variants[0] || null;
+}
+
+export async function generateAdCopyVariants(
+  input: AdCopyInput,
+  count: number = 3
+): Promise<string[]> {
+  const n = Math.max(1, Math.min(5, count));
   const hasContext =
     input.brandDescription ||
     input.brandVoice ||
     (input.brandValueProps && input.brandValueProps.length);
 
   const system = `You write punchy, conversion-focused ad copy for D2C brands.
-Output exactly: 1 short headline (max 8 words) on line 1, 1 supporting line (max 18 words) on line 2.
-No emojis. No quotes. No hashtags. No labels like "Headline:". Plain text, two lines.`;
+Return STRICT JSON: { "variants": ["headline\\nsupporting line", ...] }
+Each variant is exactly two lines separated by a single \\n:
+  Line 1: short headline (max 8 words).
+  Line 2: supporting line (max 18 words).
+Each variant must take a distinctly different angle (e.g. value, urgency, social proof, voice). No emojis, no quotes, no hashtags, no labels.`;
 
   const brandContext = hasContext
     ? `Our brand: ${input.brand}
@@ -235,13 +251,29 @@ Competitor "${input.competitor}" just went OUT OF STOCK on ${input.platform}${
     input.productHint ? ` (${input.productHint})` : ""
   }.
 
-Write ad copy that captures shoppers searching for the now-unavailable competitor right now. Lean into our brand voice and one of our value props. Two lines, plain text.`;
+Write ${n} distinct ad-copy variants that capture shoppers searching for the now-unavailable competitor. Lean into our brand voice and value props.`;
 
-  return await chat(
+  const raw = await chat(
     [
       { role: "system", content: system },
       { role: "user", content: user },
     ],
-    { temperature: 0.85, maxTokens: 120 }
+    { temperature: 0.85, maxTokens: 60 + 120 * n, jsonMode: true }
   );
+  if (!raw) return [];
+  try {
+    const cleaned = raw
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```\s*$/i, "")
+      .trim();
+    const parsed = JSON.parse(cleaned);
+    const arr: any[] = Array.isArray(parsed?.variants) ? parsed.variants : [];
+    return arr
+      .map((v) => String(v || "").trim())
+      .filter((v) => v.length > 0)
+      .slice(0, n);
+  } catch (e) {
+    console.error("[groq] ad-copy variants parse fail:", raw.slice(0, 200));
+    return [];
+  }
 }

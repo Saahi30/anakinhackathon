@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import { supabaseServer } from "./supabase";
 
 export type Monitor = {
@@ -13,6 +14,13 @@ export type Monitor = {
   last_back_in_stock_at: string | null;
   created_at: string;
   enabled: number;
+  last_price: string | null;
+  last_price_value: number | null;
+  last_price_at: string | null;
+  low_stock_since: string | null;
+  snooze_until: string | null;
+  consecutive_failures: number;
+  auto_paused_at: string | null;
 };
 
 export type Event = {
@@ -47,6 +55,13 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   brand_source_url: "",
   onboarding_completed: "0",
   poll_interval_seconds: "30",
+  alert_tier_low_stock_enabled: "1",
+  alert_tier_price_drop_enabled: "1",
+  alert_tier_restock_enabled: "1",
+  adaptive_polling_enabled: "1",
+  auto_pause_threshold: "5",
+  ad_copy_variants: "3",
+  price_drop_min_pct: "5",
 };
 
 let settingsCache: Record<string, string> | null = null;
@@ -67,6 +82,16 @@ function rowToMonitor(r: any): Monitor {
     last_back_in_stock_at: r.last_back_in_stock_at,
     created_at: r.created_at,
     enabled: r.enabled ? 1 : 0,
+    last_price: r.last_price ?? null,
+    last_price_value:
+      r.last_price_value === null || r.last_price_value === undefined
+        ? null
+        : Number(r.last_price_value),
+    last_price_at: r.last_price_at ?? null,
+    low_stock_since: r.low_stock_since ?? null,
+    snooze_until: r.snooze_until ?? null,
+    consecutive_failures: Number(r.consecutive_failures) || 0,
+    auto_paused_at: r.auto_paused_at ?? null,
   };
 }
 
@@ -190,15 +215,56 @@ export async function dueMonitors(
   limit = 5
 ): Promise<Monitor[]> {
   const cutoff = new Date(Date.now() - intervalSeconds * 1000).toISOString();
+  const nowIso = new Date().toISOString();
   const { data, error } = await supabaseServer()
     .from("monitors")
     .select("*")
     .eq("enabled", true)
+    .is("auto_paused_at", null)
+    .or(`snooze_until.is.null,snooze_until.lt.${nowIso}`)
     .or(`last_checked_at.is.null,last_checked_at.lt.${cutoff}`)
     .order("last_checked_at", { ascending: true, nullsFirst: true })
     .limit(limit);
   if (error) throw error;
   return (data || []).map(rowToMonitor);
+}
+
+// Adaptive polling: shorten interval for monitors with recent OOS history,
+// lengthen it for stable ones. Returns the per-monitor interval in seconds.
+export function adaptiveIntervalFor(
+  base: number,
+  m: Pick<Monitor, "last_oos_at" | "last_status">
+): number {
+  if (m.last_status === "out_of_stock") return Math.max(10, Math.floor(base / 2));
+  if (m.last_oos_at) {
+    const ageMs = Date.now() - new Date(m.last_oos_at).getTime();
+    const day = 24 * 60 * 60 * 1000;
+    if (ageMs < 7 * day) return Math.max(15, Math.floor(base * 0.6));
+  }
+  return base;
+}
+
+export async function dueMonitorsAdaptive(
+  base: number,
+  limit = 5
+): Promise<Monitor[]> {
+  const nowIso = new Date().toISOString();
+  const { data, error } = await supabaseServer()
+    .from("monitors")
+    .select("*")
+    .eq("enabled", true)
+    .is("auto_paused_at", null)
+    .or(`snooze_until.is.null,snooze_until.lt.${nowIso}`)
+    .order("last_checked_at", { ascending: true, nullsFirst: true })
+    .limit(limit * 4);
+  if (error) throw error;
+  const now = Date.now();
+  const rows = (data || []).map(rowToMonitor).filter((m) => {
+    if (!m.last_checked_at) return true;
+    const age = (now - new Date(m.last_checked_at).getTime()) / 1000;
+    return age >= adaptiveIntervalFor(base, m);
+  });
+  return rows.slice(0, limit);
 }
 
 export async function insertEvent(e: {
@@ -572,4 +638,437 @@ export async function deleteCompetitor(id: number): Promise<void> {
     .delete()
     .eq("id", id);
   if (error) throw error;
+}
+
+// ---------- Usage counters ----------
+
+export type UsageRow = {
+  day: string;
+  anakin_scrapes: number;
+  groq_tokens: number;
+  slack_sent: number;
+};
+
+function utcDay(d = new Date()): string {
+  return d.toISOString().slice(0, 10);
+}
+
+export async function bumpUsage(patch: {
+  anakin?: number;
+  groq?: number;
+  slack?: number;
+}): Promise<void> {
+  const day = utcDay();
+  const { error } = await supabaseServer().rpc("bump_usage", {
+    p_day: day,
+    p_anakin: patch.anakin || 0,
+    p_groq: patch.groq || 0,
+    p_slack: patch.slack || 0,
+  });
+  if (error) console.error("[usage] bump failed", error);
+}
+
+export async function getUsageWindow(days: number): Promise<UsageRow[]> {
+  const start = new Date();
+  start.setUTCDate(start.getUTCDate() - (days - 1));
+  const { data, error } = await supabaseServer()
+    .from("usage_daily")
+    .select("day, anakin_scrapes, groq_tokens, slack_sent")
+    .gte("day", utcDay(start))
+    .order("day", { ascending: true });
+  if (error) throw error;
+  return (data || []) as UsageRow[];
+}
+
+// ---------- Alert action tokens (Slack interactive buttons) ----------
+
+export async function createAlertActionToken(
+  monitorId: number,
+  action: string,
+  payload?: any
+): Promise<string> {
+  const token = randomBytes(18).toString("base64url");
+  const { error } = await supabaseServer().from("alert_actions").insert({
+    token,
+    monitor_id: monitorId,
+    action,
+    payload: payload || null,
+  });
+  if (error) throw error;
+  return token;
+}
+
+export async function consumeAlertActionToken(
+  token: string
+): Promise<{
+  monitor_id: number;
+  action: string;
+  payload: any;
+} | null> {
+  const { data, error } = await supabaseServer()
+    .from("alert_actions")
+    .select("monitor_id, action, payload, used_at")
+    .eq("token", token)
+    .maybeSingle();
+  if (error || !data || data.used_at) return null;
+  await supabaseServer()
+    .from("alert_actions")
+    .update({ used_at: new Date().toISOString() })
+    .eq("token", token);
+  return {
+    monitor_id: data.monitor_id,
+    action: data.action,
+    payload: data.payload,
+  };
+}
+
+// ---------- Playbooks ----------
+
+export type PlaybookRow = {
+  id: string;
+  name: string;
+  enabled: boolean;
+  trigger: any;
+  actions: any[];
+  fire_count: number;
+  last_fired_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function listPlaybooks(opts: { enabledOnly?: boolean } = {}): Promise<
+  PlaybookRow[]
+> {
+  let q = supabaseServer().from("playbooks").select("*");
+  if (opts.enabledOnly) q = q.eq("enabled", true);
+  const { data, error } = await q.order("created_at", { ascending: false });
+  if (error) {
+    // Table doesn't exist yet (migration not pushed). Treat as empty.
+    if (
+      typeof error === "object" &&
+      (error as any).code === "42P01"
+    )
+      return [];
+    console.error("[db] listPlaybooks error", error);
+    return [];
+  }
+  return (data || []) as PlaybookRow[];
+}
+
+export async function upsertPlaybook(p: {
+  id: string;
+  name: string;
+  enabled: boolean;
+  trigger: any;
+  actions: any[];
+}): Promise<PlaybookRow | null> {
+  const { data, error } = await supabaseServer()
+    .from("playbooks")
+    .upsert(
+      {
+        id: p.id,
+        name: p.name,
+        enabled: p.enabled,
+        trigger: p.trigger,
+        actions: p.actions,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" }
+    )
+    .select("*")
+    .maybeSingle();
+  if (error) {
+    console.error("[db] upsertPlaybook error", error);
+    return null;
+  }
+  return data as PlaybookRow | null;
+}
+
+export async function deletePlaybook(id: string): Promise<void> {
+  await supabaseServer().from("playbooks").delete().eq("id", id);
+}
+
+export async function bumpPlaybookFired(id: string): Promise<void> {
+  const now = new Date().toISOString();
+  // Two-step because Supabase JS lacks atomic increment without an RPC.
+  const { data } = await supabaseServer()
+    .from("playbooks")
+    .select("fire_count")
+    .eq("id", id)
+    .maybeSingle();
+  const next = ((data as any)?.fire_count || 0) + 1;
+  await supabaseServer()
+    .from("playbooks")
+    .update({ fire_count: next, last_fired_at: now })
+    .eq("id", id);
+}
+
+// ---------- Strike / event analytics ----------
+
+export async function getEventCountsByDay(
+  days: number,
+  kinds: string[] = ["oos_detected"]
+): Promise<{ day: string; count: number }[]> {
+  const since = new Date(
+    Date.now() - (days - 1) * 24 * 60 * 60 * 1000
+  ).toISOString();
+  const { data, error } = await supabaseServer()
+    .from("events")
+    .select("created_at")
+    .in("kind", kinds)
+    .gte("created_at", since);
+  if (error) {
+    console.error("[db] getEventCountsByDay error", error);
+    return [];
+  }
+  const buckets: Record<string, number> = {};
+  for (let i = 0; i < days; i++) {
+    const d = new Date(Date.now() - (days - 1 - i) * 24 * 60 * 60 * 1000);
+    buckets[d.toISOString().slice(0, 10)] = 0;
+  }
+  for (const r of data || []) {
+    const day = ((r as any).created_at || "").slice(0, 10);
+    if (day in buckets) buckets[day]++;
+  }
+  return Object.entries(buckets).map(([day, count]) => ({ day, count }));
+}
+
+export async function getDayHourHeatmap(
+  days: number = 30,
+  kinds: string[] = ["oos_detected"]
+): Promise<number[][]> {
+  const since = new Date(
+    Date.now() - days * 24 * 60 * 60 * 1000
+  ).toISOString();
+  const { data, error } = await supabaseServer()
+    .from("events")
+    .select("created_at")
+    .in("kind", kinds)
+    .gte("created_at", since);
+  if (error) {
+    console.error("[db] getDayHourHeatmap error", error);
+    return Array.from({ length: 7 }, () => new Array(24).fill(0));
+  }
+  const grid: number[][] = Array.from({ length: 7 }, () =>
+    new Array(24).fill(0)
+  );
+  for (const r of data || []) {
+    const d = new Date((r as any).created_at);
+    if (isNaN(d.getTime())) continue;
+    const jsDay = d.getDay(); // 0 Sun..6 Sat
+    const row = jsDay === 0 ? 6 : jsDay - 1; // Mon..Sun
+    grid[row][d.getHours()]++;
+  }
+  return grid;
+}
+
+export type CompetitorLeaderRow = {
+  monitor_id: number;
+  label: string | null;
+  platform: string;
+  url: string;
+  strikes: number;
+  avg_window_seconds: number;
+  last_strike_at: string | null;
+  trend: number[];
+};
+
+export async function getCompetitorLeaderboard(
+  days: number = 30,
+  limit: number = 10
+): Promise<CompetitorLeaderRow[]> {
+  const since = new Date(
+    Date.now() - days * 24 * 60 * 60 * 1000
+  ).toISOString();
+  const { data, error } = await supabaseServer()
+    .from("events")
+    .select(
+      "monitor_id, kind, created_at, monitors(id, label, platform, url, last_oos_at, last_back_in_stock_at)"
+    )
+    .in("kind", ["oos_detected", "back_in_stock"])
+    .gte("created_at", since)
+    .order("created_at", { ascending: true });
+  if (error) {
+    console.error("[db] getCompetitorLeaderboard error", error);
+    return [];
+  }
+  type Row = {
+    monitor_id: number;
+    label: string | null;
+    platform: string;
+    url: string;
+    starts: string[];
+    durations: number[];
+    perDay: Record<string, number>;
+  };
+  const byMonitor = new Map<number, Row>();
+  // Track an open OOS start time so we can compute durations as restocks land.
+  const openStart = new Map<number, number>();
+  for (const r of data || []) {
+    const id = (r as any).monitor_id as number;
+    const meta = (r as any).monitors || {};
+    const row =
+      byMonitor.get(id) ||
+      ({
+        monitor_id: id,
+        label: meta.label ?? null,
+        platform: meta.platform ?? "unknown",
+        url: meta.url ?? "",
+        starts: [],
+        durations: [],
+        perDay: {},
+      } as Row);
+    if ((r as any).kind === "oos_detected") {
+      row.starts.push((r as any).created_at);
+      openStart.set(id, new Date((r as any).created_at).getTime());
+      const day = ((r as any).created_at || "").slice(0, 10);
+      row.perDay[day] = (row.perDay[day] || 0) + 1;
+    } else if ((r as any).kind === "back_in_stock") {
+      const s = openStart.get(id);
+      if (s) {
+        row.durations.push((new Date((r as any).created_at).getTime() - s) / 1000);
+        openStart.delete(id);
+      }
+    }
+    byMonitor.set(id, row);
+  }
+  const out: CompetitorLeaderRow[] = [];
+  for (const row of byMonitor.values()) {
+    if (row.starts.length === 0) continue;
+    const avg =
+      row.durations.length > 0
+        ? row.durations.reduce((a, b) => a + b, 0) / row.durations.length
+        : 0;
+    const last = row.starts[row.starts.length - 1];
+    const trend: number[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10);
+      trend.push(row.perDay[d] || 0);
+    }
+    out.push({
+      monitor_id: row.monitor_id,
+      label: row.label,
+      platform: row.platform,
+      url: row.url,
+      strikes: row.starts.length,
+      avg_window_seconds: Math.round(avg),
+      last_strike_at: last,
+      trend,
+    });
+  }
+  out.sort((a, b) => b.strikes - a.strikes);
+  return out.slice(0, limit);
+}
+
+export type StrikeRecord = {
+  monitor_id: number;
+  label: string | null;
+  platform: string;
+  url: string;
+  started_at: string;
+  ended_at: string | null;
+  duration_seconds: number;
+  is_live: boolean;
+  est_aov_inr: number;
+  est_capture_rate: number;
+  est_impressions_per_hour: number;
+  est_spend_per_hour_inr: number;
+  last_price: string | null;
+};
+
+export async function listStrikes(
+  days: number = 30,
+  limit: number = 100
+): Promise<StrikeRecord[]> {
+  const since = new Date(
+    Date.now() - days * 24 * 60 * 60 * 1000
+  ).toISOString();
+  const { data, error } = await supabaseServer()
+    .from("events")
+    .select(
+      "monitor_id, kind, created_at, monitors(id, label, platform, url, last_status, est_aov_inr, est_capture_rate, est_impressions_per_hour, est_spend_per_hour_inr, last_price)"
+    )
+    .in("kind", ["oos_detected", "back_in_stock"])
+    .gte("created_at", since)
+    .order("created_at", { ascending: true });
+  if (error) {
+    console.error("[db] listStrikes error", error);
+    return [];
+  }
+  // For each OOS, find the next back_in_stock for the same monitor.
+  const rows = (data || []) as any[];
+  const open = new Map<number, any>();
+  const strikes: StrikeRecord[] = [];
+  for (const r of rows) {
+    const id = r.monitor_id as number;
+    if (r.kind === "oos_detected") {
+      open.set(id, r);
+    } else if (r.kind === "back_in_stock" && open.has(id)) {
+      const s = open.get(id);
+      strikes.push(buildStrike(s, r.created_at, false));
+      open.delete(id);
+    }
+  }
+  for (const s of open.values()) {
+    strikes.push(buildStrike(s, null, true));
+  }
+  strikes.sort(
+    (a, b) =>
+      new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
+  );
+  return strikes.slice(0, limit);
+}
+
+function buildStrike(
+  startEvent: any,
+  endedAt: string | null,
+  isLive: boolean
+): StrikeRecord {
+  const m = startEvent.monitors || {};
+  const start = new Date(startEvent.created_at).getTime();
+  const end = endedAt ? new Date(endedAt).getTime() : Date.now();
+  const duration = Math.max(0, Math.floor((end - start) / 1000));
+  return {
+    monitor_id: startEvent.monitor_id,
+    label: m.label ?? null,
+    platform: m.platform ?? "unknown",
+    url: m.url ?? "",
+    started_at: startEvent.created_at,
+    ended_at: endedAt,
+    duration_seconds: duration,
+    is_live: isLive && m.last_status === "out_of_stock",
+    est_aov_inr: Number(m.est_aov_inr) || 800,
+    est_capture_rate: Number(m.est_capture_rate) || 0.08,
+    est_impressions_per_hour: Number(m.est_impressions_per_hour) || 1200,
+    est_spend_per_hour_inr: Number(m.est_spend_per_hour_inr) || 350,
+    last_price: m.last_price ?? null,
+  };
+}
+
+// ---------- Recent events for sparkline ----------
+
+export async function recentOOSCountsForMonitor(
+  monitorId: number,
+  hours = 24
+): Promise<number[]> {
+  const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+  const { data, error } = await supabaseServer()
+    .from("events")
+    .select("created_at, kind")
+    .eq("monitor_id", monitorId)
+    .gte("created_at", since)
+    .in("kind", ["oos_detected", "low_stock", "back_in_stock", "price_drop"]);
+  if (error) throw error;
+  const buckets = new Array(hours).fill(0);
+  const now = Date.now();
+  for (const r of data || []) {
+    const ageHours = Math.floor(
+      (now - new Date((r as any).created_at).getTime()) / (60 * 60 * 1000)
+    );
+    const idx = hours - 1 - ageHours;
+    if (idx >= 0 && idx < hours) buckets[idx] += 1;
+  }
+  return buckets;
 }

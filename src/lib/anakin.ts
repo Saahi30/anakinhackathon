@@ -1,3 +1,5 @@
+import { bumpUsage } from "./db";
+
 const BASE = "https://api.anakin.io/v1";
 
 export type ScrapeResult = {
@@ -59,6 +61,7 @@ export async function scrapeUrl(
   const timeoutMs = opts.timeoutMs ?? 90_000;
   const pollIntervalMs = opts.pollIntervalMs ?? 3_000;
   const jobId = await submitScrape(url);
+  bumpUsage({ anakin: 1 }).catch(() => {});
 
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {

@@ -1,17 +1,35 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import StrikeReplay, { type ReplayStrike } from "./StrikeReplay";
-import StrikeROI, { mockROI } from "./StrikeROI";
 import type { Event, Monitor } from "./Dashboard";
 
-type StrikeRow = {
-  monitorId: number;
-  competitor: string;
+export type ScoredStrike = {
+  monitor_id: number;
+  label: string | null;
   platform: string;
-  startedAt: string;
-  durationMinutes: number;
-  isLive: boolean;
+  url: string;
+  started_at: string;
+  ended_at: string | null;
+  duration_seconds: number;
+  is_live: boolean;
+  est_impressions: number;
+  est_clicks: number;
+  est_conversions: number;
+  est_revenue_inr: number;
+  est_spend_inr: number;
+  est_roas: number;
+  last_price: string | null;
+};
+
+type Totals = {
+  revenue: number;
+  spend: number;
+  clicks: number;
+  impressions: number;
+  strikes: number;
+  live: number;
+  avg_roas: number;
 };
 
 const platformBadge: Record<string, string> = {
@@ -23,49 +41,6 @@ const platformBadge: Record<string, string> = {
   unknown: "bg-soft text-muted border-hairline",
 };
 
-const FALLBACK_STRIKES: StrikeRow[] = [
-  {
-    monitorId: 9001,
-    competitor: "Mamaearth — Onion Hair Oil 250ml",
-    platform: "myntra",
-    startedAt: new Date(Date.now() - 2 * 86400 * 1000).toISOString(),
-    durationMinutes: 184,
-    isLive: false,
-  },
-  {
-    monitorId: 9002,
-    competitor: "BoAt Rockerz 450 — Black",
-    platform: "amazon",
-    startedAt: new Date(Date.now() - 3 * 86400 * 1000 - 4 * 3600 * 1000).toISOString(),
-    durationMinutes: 96,
-    isLive: false,
-  },
-  {
-    monitorId: 9003,
-    competitor: "Cadbury Silk 150g 4pk",
-    platform: "blinkit",
-    startedAt: new Date(Date.now() - 4 * 86400 * 1000).toISOString(),
-    durationMinutes: 42,
-    isLive: false,
-  },
-  {
-    monitorId: 9004,
-    competitor: "Plum Niacinamide Serum",
-    platform: "ajio",
-    startedAt: new Date(Date.now() - 6 * 86400 * 1000).toISOString(),
-    durationMinutes: 226,
-    isLive: false,
-  },
-  {
-    monitorId: 9005,
-    competitor: "Coca-Cola Zero 750ml × 6",
-    platform: "zepto",
-    startedAt: new Date(Date.now() - 7 * 86400 * 1000).toISOString(),
-    durationMinutes: 38,
-    isLive: false,
-  },
-];
-
 const inr = (n: number) =>
   "₹" + n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 
@@ -76,62 +51,36 @@ export default function StrikesPanel({
   events: Event[];
   monitors: Monitor[];
 }) {
+  const [strikes, setStrikes] = useState<ScoredStrike[]>([]);
+  const [totals, setTotals] = useState<Totals | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [replay, setReplay] = useState<ReplayStrike | null>(null);
   const [filter, setFilter] = useState<string>("All");
 
-  // Build live strikes from events: each oos_detected becomes a row.
-  const liveStrikes = useMemo<StrikeRow[]>(() => {
-    return events
-      .filter((e) => e.kind === "oos_detected")
-      .map((e) => {
-        const m = monitors.find((x) => x.id === e.monitor_id);
-        const start = new Date(
-          e.created_at + (e.created_at.endsWith("Z") ? "" : "Z")
-        ).getTime();
-        const restock = monitors
-          .filter((x) => x.id === e.monitor_id && x.last_back_in_stock_at)
-          .map((x) =>
-            new Date(
-              x.last_back_in_stock_at! +
-                (x.last_back_in_stock_at!.endsWith("Z") ? "" : "Z")
-            ).getTime()
-          )[0];
-        const isLive = m?.last_status === "out_of_stock";
-        const ended = restock && restock > start ? restock : Date.now();
-        const durationMinutes = Math.max(
-          1,
-          Math.floor((ended - start) / 60000)
-        );
-        return {
-          monitorId: e.monitor_id,
-          competitor:
-            e.monitor_label ||
-            m?.label ||
-            m?.url ||
-            `Monitor #${e.monitor_id}`,
-          platform: e.monitor_platform || m?.platform || "unknown",
-          startedAt: e.created_at,
-          durationMinutes: isLive ? Math.max(1, durationMinutes) : durationMinutes,
-          isLive,
-        };
-      });
-  }, [events, monitors]);
+  async function refresh() {
+    try {
+      const r = await fetch("/api/insights/strikes?days=30&limit=200").then((r) =>
+        r.json()
+      );
+      setStrikes(r.strikes || []);
+      setTotals(r.totals || null);
+    } catch {
+      // ignore
+    } finally {
+      setLoaded(true);
+    }
+  }
 
-  const all = [...liveStrikes, ...FALLBACK_STRIKES];
-  const platforms = ["All", ...Array.from(new Set(all.map((s) => s.platform)))];
-  const visible = all.filter((s) => filter === "All" || s.platform === filter);
+  useEffect(() => {
+    refresh();
+    // refresh when new events land so the table stays live
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [events.length, monitors.length]);
 
-  const totalRevenue = visible.reduce(
-    (sum, s) => sum + mockROI(s.monitorId).revenue,
-    0
-  );
-  const totalClicks = visible.reduce(
-    (sum, s) => sum + mockROI(s.monitorId).clicks,
-    0
-  );
-  const avgRoas =
-    visible.reduce((sum, s) => sum + mockROI(s.monitorId).roas, 0) /
-    Math.max(1, visible.length);
+  const platforms = useMemo(() => {
+    return ["All", ...Array.from(new Set(strikes.map((s) => s.platform)))];
+  }, [strikes]);
+  const visible = strikes.filter((s) => filter === "All" || s.platform === filter);
 
   return (
     <div className="space-y-6">
@@ -144,7 +93,8 @@ export default function StrikesPanel({
             Strikes
           </h2>
           <p className="text-sm text-muted mt-1.5">
-            Every captured OOS window. Click any row to replay.
+            Every captured OOS window over the last 30 days. Click a row to
+            replay.
           </p>
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -165,10 +115,18 @@ export default function StrikesPanel({
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Stat label="Strikes" value={visible.length.toString()} tone="neutral" />
-        <Stat label="Live now" value={visible.filter((s) => s.isLive).length.toString()} tone="danger" />
-        <Stat label="Revenue captured" value={inr(totalRevenue)} tone="good" />
-        <Stat label="Avg ROAS" value={avgRoas.toFixed(1) + "×"} tone="violet" />
+        <Stat label="Strikes" value={(totals?.strikes ?? 0).toString()} tone="neutral" />
+        <Stat label="Live now" value={(totals?.live ?? 0).toString()} tone="danger" />
+        <Stat
+          label="Revenue captured"
+          value={inr(totals?.revenue ?? 0)}
+          tone="good"
+        />
+        <Stat
+          label="Avg ROAS"
+          value={(totals?.avg_roas ?? 0).toFixed(1) + "×"}
+          tone="violet"
+        />
       </div>
 
       <section className="rounded-clay bg-panel border border-hairline shadow-clay overflow-hidden">
@@ -180,64 +138,73 @@ export default function StrikesPanel({
                 <th className="text-left px-2 py-3 font-medium">Platform</th>
                 <th className="text-left px-2 py-3 font-medium">Started</th>
                 <th className="text-right px-2 py-3 font-medium">Window</th>
-                <th className="text-right px-2 py-3 font-medium">Captured</th>
+                <th className="text-right px-2 py-3 font-medium">Est. revenue</th>
                 <th className="text-right px-2 py-3 font-medium">ROAS</th>
                 <th className="text-right px-5 py-3 font-medium">Replay</th>
               </tr>
             </thead>
             <tbody>
-              {visible.map((s, i) => {
-                const roi = mockROI(s.monitorId);
-                return (
-                  <tr
-                    key={`${s.monitorId}-${i}`}
-                    className="border-b border-hairline/60 hover:bg-soft/60 cursor-pointer transition"
-                    onClick={() => setReplay(s)}
-                  >
-                    <td className="px-5 py-3.5 max-w-[300px]">
-                      <div className="font-medium text-ink truncate flex items-center gap-2">
-                        {s.isLive && (
-                          <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.14em] font-semibold text-white px-2 py-0.5 rounded-full bg-brand-coral shrink-0">
-                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                            Live
-                          </span>
-                        )}
-                        {s.competitor}
-                      </div>
-                    </td>
-                    <td className="px-2 py-3">
-                      <span
-                        className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded border ${platformBadge[s.platform] || platformBadge.unknown}`}
-                      >
-                        {s.platform}
-                      </span>
-                    </td>
-                    <td className="px-2 py-3 text-xs text-muted">
-                      {new Date(s.startedAt).toLocaleString()}
-                    </td>
-                    <td className="px-2 py-3 text-right font-mono text-ink">
-                      {s.durationMinutes < 60
-                        ? `${s.durationMinutes}m`
-                        : `${(s.durationMinutes / 60).toFixed(1)}h`}
-                    </td>
-                    <td className="px-2 py-3 text-right font-mono text-brand-teal">
-                      {inr(roi.revenue)}
-                    </td>
-                    <td className="px-2 py-3 text-right font-mono text-ink">
-                      {roi.roas}×
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      <span className="text-xs text-brand-teal hover:underline font-medium">
-                        ▶ Replay
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-              {!visible.length && (
+              {visible.map((s, i) => (
+                <tr
+                  key={`${s.monitor_id}-${i}-${s.started_at}`}
+                  className="border-b border-hairline/60 hover:bg-soft/60 cursor-pointer transition"
+                  onClick={() =>
+                    setReplay({
+                      monitorId: s.monitor_id,
+                      competitor: s.label || s.url,
+                      platform: s.platform,
+                      startedAt: s.started_at,
+                      durationMinutes: Math.max(1, Math.round(s.duration_seconds / 60)),
+                    })
+                  }
+                >
+                  <td className="px-5 py-3.5 max-w-[300px]">
+                    <div className="font-medium text-ink truncate flex items-center gap-2">
+                      {s.is_live && (
+                        <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.14em] font-semibold text-white px-2 py-0.5 rounded-full bg-brand-coral shrink-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                          Live
+                        </span>
+                      )}
+                      {s.label || s.url}
+                    </div>
+                  </td>
+                  <td className="px-2 py-3">
+                    <span
+                      className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded border ${platformBadge[s.platform] || platformBadge.unknown}`}
+                    >
+                      {s.platform}
+                    </span>
+                  </td>
+                  <td className="px-2 py-3 text-xs text-muted">
+                    {new Date(s.started_at).toLocaleString()}
+                  </td>
+                  <td className="px-2 py-3 text-right font-mono text-ink">
+                    {s.duration_seconds < 60
+                      ? `${s.duration_seconds}s`
+                      : s.duration_seconds < 3600
+                        ? `${Math.round(s.duration_seconds / 60)}m`
+                        : `${(s.duration_seconds / 3600).toFixed(1)}h`}
+                  </td>
+                  <td className="px-2 py-3 text-right font-mono text-brand-teal">
+                    {inr(s.est_revenue_inr)}
+                  </td>
+                  <td className="px-2 py-3 text-right font-mono text-ink">
+                    {s.est_roas}×
+                  </td>
+                  <td className="px-5 py-3 text-right">
+                    <span className="text-xs text-brand-teal hover:underline font-medium">
+                      ▶ Replay
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {loaded && visible.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-5 py-12 text-center text-muted">
-                    No strikes match this filter yet.
+                    {strikes.length === 0
+                      ? "No captured strike windows yet. They'll appear here as competitors go OOS."
+                      : "No strikes match this filter."}
                   </td>
                 </tr>
               )}

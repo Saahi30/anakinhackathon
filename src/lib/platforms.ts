@@ -6,12 +6,17 @@ export type Platform =
   | "amazon"
   | "unknown";
 
-export type StockStatus = "in_stock" | "out_of_stock" | "unknown";
+export type StockStatus =
+  | "in_stock"
+  | "low_stock"
+  | "out_of_stock"
+  | "unknown";
 
 export type DetectionResult = {
   status: StockStatus;
   signal: string | null;
   confidence: "high" | "medium" | "low";
+  lowStockHint?: string | null;
 };
 
 export function detectPlatform(url: string): Platform {
@@ -81,6 +86,18 @@ const OOS_PATTERNS: Record<Platform, RegExp[]> = {
   ],
 };
 
+// "Almost gone" / "Only X left" / "selling fast" — pre-OOS warning tier.
+const LOW_STOCK_PATTERNS: RegExp[] = [
+  /only\s+(\d{1,2})\s+(?:left|remaining|in\s+stock)/i,
+  /hurry,?\s*only\s+(\d{1,2})\s+left/i,
+  /(\d{1,2})\s+left\s+in\s+stock/i,
+  /selling\s+fast/i,
+  /\balmost\s+gone\b/i,
+  /low\s+stock/i,
+  /limited\s+stock/i,
+  /few\s+left/i,
+];
+
 const IN_STOCK_PATTERNS: Record<Platform, RegExp[]> = {
   myntra: [/add\s*to\s*bag/i, /\bbuy\s*now\b/i, /\bgo\s*to\s*bag\b/i],
   ajio: [/add\s*to\s*bag/i, /\bbuy\s*now\b/i, /\bgo\s*to\s*bag\b/i],
@@ -110,6 +127,20 @@ export function detectStock(
     }
   }
 
+  // Pre-OOS: low-stock signal. Only fires if there's no add-to-cart on the
+  // page (otherwise it's just "selling fast" marketing copy on an in-stock SKU).
+  for (const p of LOW_STOCK_PATTERNS) {
+    const m = text.match(p);
+    if (m) {
+      return {
+        status: "low_stock",
+        signal: m[0].slice(0, 60),
+        confidence: "medium",
+        lowStockHint: m[1] ? `${m[1]} left` : m[0].slice(0, 40),
+      };
+    }
+  }
+
   const inStock = IN_STOCK_PATTERNS[platform];
   for (const p of inStock) {
     const m = text.match(p);
@@ -123,6 +154,31 @@ export function detectStock(
   }
 
   return { status: "unknown", signal: null, confidence: "low" };
+}
+
+// Lift a price from the scraped page. We deliberately keep this simple — first
+// ₹/Rs/INR amount on the page is usually the active sell price. Returns both
+// the raw string (for display) and a numeric value (for comparison).
+const PRICE_PATTERNS: RegExp[] = [
+  /₹\s*([\d]{2,3}(?:[,\s]\d{3})*(?:\.\d{1,2})?)/,
+  /\bRs\.?\s*([\d]{2,3}(?:[,\s]\d{3})*(?:\.\d{1,2})?)/i,
+  /\bINR\s*([\d]{2,3}(?:[,\s]\d{3})*(?:\.\d{1,2})?)/i,
+];
+
+export type PriceExtract = { display: string; value: number } | null;
+
+export function extractPrice(text: string): PriceExtract {
+  if (!text) return null;
+  for (const p of PRICE_PATTERNS) {
+    const m = text.match(p);
+    if (m) {
+      const cleaned = m[1].replace(/[,\s]/g, "");
+      const value = Number(cleaned);
+      if (!isFinite(value) || value <= 0) continue;
+      return { display: m[0].trim(), value };
+    }
+  }
+  return null;
 }
 
 export function extractTitle(markdown: string): string | null {

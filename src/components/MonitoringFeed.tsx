@@ -22,12 +22,47 @@ const KIND_DISPLAY: Record<string, { label: string; tone: string; description: s
   back_in_stock: {
     label: "Back in stock",
     tone: "border-accent/60 bg-accent/10 text-accent",
-    description: "Competitor restocked",
+    description: "Pull bid surge — competitor restocked",
+  },
+  low_stock: {
+    label: "Low stock",
+    tone: "border-warn/60 bg-warn/10 text-warn",
+    description: "Pre-OOS warning",
+  },
+  price_drop: {
+    label: "Price drop",
+    tone: "border-brand-pink/60 bg-brand-pink/10 text-brand-pink",
+    description: "Competitor cut price",
   },
   scrape_failed: {
     label: "Scrape failed",
     tone: "border-warn/60 bg-warn/10 text-warn",
     description: "Will retry next tick",
+  },
+  auto_paused: {
+    label: "Auto-paused",
+    tone: "border-warn/60 bg-warn/10 text-warn",
+    description: "Too many consecutive failures",
+  },
+  snoozed: {
+    label: "Snoozed",
+    tone: "border-border bg-bg/40 text-gray-300",
+    description: "Monitor paused",
+  },
+  resumed: {
+    label: "Resumed",
+    tone: "border-accent/60 bg-accent/10 text-accent",
+    description: "Monitor active again",
+  },
+  resolved: {
+    label: "Resolved",
+    tone: "border-accent/60 bg-accent/10 text-accent",
+    description: "Marked resolved via Slack",
+  },
+  ad_live: {
+    label: "Ad live",
+    tone: "border-accent/60 bg-accent/10 text-accent",
+    description: "Confirmed via Slack",
   },
   ad_copy: {
     label: "Ad copy generated",

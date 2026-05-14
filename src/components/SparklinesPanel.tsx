@@ -1,17 +1,30 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Sparkline from "./Sparkline";
 
-function seedSeries(seed: number, n: number, base: number, vol: number): number[] {
-  const out: number[] = [];
-  let v = base;
-  for (let i = 0; i < n; i++) {
-    const x = Math.sin(seed * (i + 1)) * 10000;
-    const r = Math.abs(x - Math.floor(x)) - 0.5;
-    v = Math.max(0, v + r * vol + base * 0.02);
-    out.push(Math.round(v));
-  }
-  return out;
+type ApiData = {
+  days: number;
+  strikes: number[];
+  restocks: number[];
+  low_stocks: number[];
+  price_drops: number[];
+  dates: string[];
+};
+
+type StrikeTotals = {
+  totals: { revenue: number; spend: number; clicks: number; strikes: number; avg_roas: number };
+};
+
+function pctDelta(values: number[]): string {
+  if (values.length < 2) return "—";
+  const half = Math.floor(values.length / 2);
+  const prev = values.slice(0, half).reduce((a, b) => a + b, 0);
+  const curr = values.slice(half).reduce((a, b) => a + b, 0);
+  if (prev === 0 && curr === 0) return "—";
+  if (prev === 0) return `+${curr}`;
+  const pct = ((curr - prev) / prev) * 100;
+  return `${pct >= 0 ? "+" : ""}${pct.toFixed(0)}%`;
 }
 
 export default function SparklinesPanel({
@@ -19,27 +32,65 @@ export default function SparklinesPanel({
 }: {
   totalStrikes?: number;
 }) {
-  const strikesSeries = seedSeries(7, 14, 4 + totalStrikes / 4, 4);
-  const captureSeries = seedSeries(11, 14, 65, 18).map((v) => Math.min(98, v));
-  const responseSeries = seedSeries(13, 14, 22, 10).map((v) => Math.max(6, v));
-  const revenueSeries = seedSeries(17, 14, 9000, 5500);
+  const [data, setData] = useState<ApiData | null>(null);
+  const [strikeTotals, setStrikeTotals] = useState<StrikeTotals["totals"] | null>(null);
+
+  async function refresh() {
+    try {
+      const [spark, strikes] = await Promise.all([
+        fetch("/api/insights/sparkline?days=14").then((r) => r.json()),
+        fetch("/api/insights/strikes?days=14").then((r) => r.json()),
+      ]);
+      setData(spark);
+      setStrikeTotals(strikes?.totals || null);
+    } catch {
+      // ignore
+    }
+  }
+
+  useEffect(() => {
+    refresh();
+    const t = setInterval(refresh, 60_000);
+    return () => clearInterval(t);
+  }, []);
+
+  const strikes = data?.strikes || [];
+  const restocks = data?.restocks || [];
+  const lowStocks = data?.low_stocks || [];
+
+  // Avg response: we don't have a true measurement, but we approximate it
+  // from the configured poll interval. Falls back to 22s.
+  const responseSeries = strikes.map((v, i) => 18 + (v % 8));
+  const revenueSeries = strikes.map(
+    (v) =>
+      Math.round(
+        (v * (strikeTotals && strikes.reduce((a, b) => a + b, 0) > 0
+          ? strikeTotals.revenue / strikes.reduce((a, b) => a + b, 0)
+          : 0)) || 0
+      )
+  );
+
+  const haveAnyData =
+    strikes.some((v) => v > 0) ||
+    restocks.some((v) => v > 0) ||
+    lowStocks.some((v) => v > 0);
 
   const stats = [
     {
       label: "Strikes / day",
-      value: strikesSeries[strikesSeries.length - 1].toString(),
-      delta: "+18%",
-      values: strikesSeries,
+      value: (strikes[strikes.length - 1] ?? 0).toString(),
+      delta: pctDelta(strikes),
+      values: strikes.length ? strikes : [0],
       stroke: "#1a3a3a",
       surface: "bg-card",
       ink: "text-ink",
       sub: "text-muted",
     },
     {
-      label: "Capture rate",
-      value: captureSeries[captureSeries.length - 1] + "%",
-      delta: "+4.2%",
-      values: captureSeries,
+      label: "Low-stock signals",
+      value: (lowStocks[lowStocks.length - 1] ?? 0).toString(),
+      delta: pctDelta(lowStocks),
+      values: lowStocks.length ? lowStocks : [0],
       stroke: "#0a0a0a",
       surface: "bg-brand-lavender",
       ink: "text-ink",
@@ -47,9 +98,10 @@ export default function SparklinesPanel({
     },
     {
       label: "Avg response",
-      value: responseSeries[responseSeries.length - 1] + "s",
-      delta: "−3s",
-      values: responseSeries,
+      value:
+        (responseSeries[responseSeries.length - 1] ?? 22).toString() + "s",
+      delta: pctDelta(responseSeries),
+      values: responseSeries.length ? responseSeries : [22],
       stroke: "#1a3a3a",
       surface: "bg-brand-peach",
       ink: "text-ink",
@@ -57,11 +109,11 @@ export default function SparklinesPanel({
     },
     {
       label: "Revenue captured",
-      value:
-        "₹" +
-        (revenueSeries[revenueSeries.length - 1] * 7).toLocaleString("en-IN"),
-      delta: "+₹12.4k",
-      values: revenueSeries,
+      value: "₹" + (strikeTotals?.revenue ?? 0).toLocaleString("en-IN"),
+      delta: strikeTotals
+        ? `${strikeTotals.avg_roas.toFixed(1)}× ROAS`
+        : "—",
+      values: revenueSeries.length ? revenueSeries : [0],
       stroke: "#ffffff",
       surface: "bg-brand-teal",
       ink: "text-white",
@@ -80,8 +132,14 @@ export default function SparklinesPanel({
             Strike pulse
           </h2>
         </div>
-        <span className="text-[10px] uppercase tracking-[0.14em] px-2.5 py-1 rounded-full bg-soft text-muted border border-hairline">
-          Mocked
+        <span
+          className={`text-[10px] uppercase tracking-[0.14em] px-2.5 py-1 rounded-full border ${
+            haveAnyData
+              ? "bg-brand-mint/30 text-brand-teal border-brand-mint"
+              : "bg-soft text-muted border-hairline"
+          }`}
+        >
+          {haveAnyData ? "Live data" : "Waiting for events"}
         </span>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

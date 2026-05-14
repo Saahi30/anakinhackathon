@@ -16,6 +16,7 @@ import PlaybooksPanel from "./PlaybooksPanel";
 import IntegrationsPanel from "./IntegrationsPanel";
 import InsightsPanel from "./InsightsPanel";
 import WarRoom from "./WarRoom";
+import UsageStrip from "./UsageStrip";
 import { supabaseBrowser } from "@/lib/supabase";
 
 export type Monitor = {
@@ -31,6 +32,13 @@ export type Monitor = {
   last_back_in_stock_at: string | null;
   created_at: string;
   enabled: number;
+  last_price: string | null;
+  last_price_value: number | null;
+  last_price_at: string | null;
+  low_stock_since: string | null;
+  snooze_until: string | null;
+  consecutive_failures: number;
+  auto_paused_at: string | null;
 };
 
 export type Event = {
@@ -221,9 +229,12 @@ export default function Dashboard() {
   const stats = useMemo(() => {
     const total = monitors.length;
     const oos = monitors.filter((m) => m.last_status === "out_of_stock").length;
+    const lowStock = monitors.filter(
+      (m) => m.last_status === "low_stock"
+    ).length;
     const inStock = monitors.filter((m) => m.last_status === "in_stock").length;
     const recentOos = events.filter((e) => e.kind === "oos_detected").length;
-    return { total, oos, inStock, recentOos };
+    return { total, oos, lowStock, inStock, recentOos };
   }, [monitors, events]);
 
   async function reRunOnboarding() {
@@ -422,6 +433,7 @@ export default function Dashboard() {
 
       <main className="max-w-7xl mx-auto px-8 py-8 space-y-8">
         <StatsBar stats={stats} />
+        <UsageStrip />
 
         {(tab === "monitoring" || tab === "feed") && (
           <SparklinesPanel totalStrikes={stats.recentOos} />

@@ -30,6 +30,27 @@ export default function SettingsPanel({
   const [criticalThreshold, setCriticalThreshold] = useState(
     settings.critical_revenue_threshold || "50000"
   );
+  const [tierLowStock, setTierLowStock] = useState(
+    settings.alert_tier_low_stock_enabled !== "0"
+  );
+  const [tierRestock, setTierRestock] = useState(
+    settings.alert_tier_restock_enabled !== "0"
+  );
+  const [tierPriceDrop, setTierPriceDrop] = useState(
+    settings.alert_tier_price_drop_enabled !== "0"
+  );
+  const [adaptivePolling, setAdaptivePolling] = useState(
+    settings.adaptive_polling_enabled !== "0"
+  );
+  const [autoPauseThreshold, setAutoPauseThreshold] = useState(
+    settings.auto_pause_threshold || "5"
+  );
+  const [priceDropMinPct, setPriceDropMinPct] = useState(
+    settings.price_drop_min_pct || "5"
+  );
+  const [adCopyVariants, setAdCopyVariants] = useState(
+    settings.ad_copy_variants || "3"
+  );
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
   useEffect(() => {
@@ -44,6 +65,13 @@ export default function SettingsPanel({
     setQuietEnd(settings.quiet_hours_end || "07:00");
     setQuietBypassCritical(settings.quiet_bypass_critical !== "0");
     setCriticalThreshold(settings.critical_revenue_threshold || "50000");
+    setTierLowStock(settings.alert_tier_low_stock_enabled !== "0");
+    setTierRestock(settings.alert_tier_restock_enabled !== "0");
+    setTierPriceDrop(settings.alert_tier_price_drop_enabled !== "0");
+    setAdaptivePolling(settings.adaptive_polling_enabled !== "0");
+    setAutoPauseThreshold(settings.auto_pause_threshold || "5");
+    setPriceDropMinPct(settings.price_drop_min_pct || "5");
+    setAdCopyVariants(settings.ad_copy_variants || "3");
   }, [settings]);
 
   async function save(patch: Record<string, string>) {
@@ -69,6 +97,13 @@ export default function SettingsPanel({
       quiet_hours_end: quietEnd,
       quiet_bypass_critical: quietBypassCritical ? "1" : "0",
       critical_revenue_threshold: criticalThreshold,
+      alert_tier_low_stock_enabled: tierLowStock ? "1" : "0",
+      alert_tier_restock_enabled: tierRestock ? "1" : "0",
+      alert_tier_price_drop_enabled: tierPriceDrop ? "1" : "0",
+      adaptive_polling_enabled: adaptivePolling ? "1" : "0",
+      auto_pause_threshold: autoPauseThreshold,
+      price_drop_min_pct: priceDropMinPct,
+      ad_copy_variants: adCopyVariants,
     });
   }
 
@@ -187,6 +222,91 @@ export default function SettingsPanel({
           setWhatsapp,
           "COMING SOON"
         )}
+      </div>
+
+      <hr className="my-4 border-border" />
+
+      <div className="space-y-1">
+        <div className="text-xs uppercase tracking-wider text-muted mb-1">
+          Alert tiers
+        </div>
+        {toggle(
+          "Low-stock pre-warning",
+          "Fire a separate alert when a competitor shows 'Only X left' or 'Selling fast' (pre-OOS).",
+          tierLowStock,
+          setTierLowStock
+        )}
+        {toggle(
+          "Back-in-stock alert",
+          "Ping when a competitor recovers from OOS, so the team can pull bid surges.",
+          tierRestock,
+          setTierRestock
+        )}
+        {toggle(
+          "Price-drop alert",
+          "Notify when a competitor drops their price by more than the threshold below.",
+          tierPriceDrop,
+          setTierPriceDrop
+        )}
+        <div className="grid grid-cols-2 gap-2 mt-2">
+          <div>
+            <label className="text-[10px] uppercase tracking-wider text-muted">
+              Price-drop threshold (%)
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={90}
+              value={priceDropMinPct}
+              onChange={(e) => setPriceDropMinPct(e.target.value)}
+              className="mt-1 w-full bg-canvas border border-hairline rounded-2xl px-3 py-2 text-sm font-mono text-ink focus:border-ink focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] uppercase tracking-wider text-muted">
+              Ad-copy variants
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={5}
+              value={adCopyVariants}
+              onChange={(e) => setAdCopyVariants(e.target.value)}
+              className="mt-1 w-full bg-canvas border border-hairline rounded-2xl px-3 py-2 text-sm font-mono text-ink focus:border-ink focus:outline-none"
+            />
+          </div>
+        </div>
+      </div>
+
+      <hr className="my-4 border-border" />
+
+      <div className="space-y-1">
+        <div className="text-xs uppercase tracking-wider text-muted mb-1">
+          Polling intelligence
+        </div>
+        {toggle(
+          "Adaptive polling",
+          "Poll OOS-prone listings more often and stable ones less often. Spends Anakin credits where they matter.",
+          adaptivePolling,
+          setAdaptivePolling
+        )}
+        <div>
+          <label className="text-[10px] uppercase tracking-wider text-muted">
+            Auto-pause after N consecutive scrape failures
+          </label>
+          <input
+            type="number"
+            min={2}
+            max={20}
+            value={autoPauseThreshold}
+            onChange={(e) => setAutoPauseThreshold(e.target.value)}
+            className="mt-1 w-full bg-canvas border border-hairline rounded-2xl px-3 py-2 text-sm font-mono text-ink focus:border-ink focus:outline-none"
+          />
+          <div className="text-[10px] text-muted mt-1">
+            Dead listings stop burning credits. Resume them manually from the
+            monitor row.
+          </div>
+        </div>
       </div>
 
       <hr className="my-4 border-border" />

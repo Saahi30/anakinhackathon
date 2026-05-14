@@ -12,8 +12,36 @@ function timeAgo(iso: string | null): string {
   return d.toLocaleString();
 }
 
+const TIER_META: Record<
+  string,
+  { label: string; pill: string; tone: "danger" | "warn" | "accent" | "muted" }
+> = {
+  oos_detected: {
+    label: "OOS",
+    pill: "border-danger/40 text-danger bg-danger/10",
+    tone: "danger",
+  },
+  low_stock: {
+    label: "LOW",
+    pill: "border-warn/40 text-warn bg-warn/10",
+    tone: "warn",
+  },
+  back_in_stock: {
+    label: "RESTOCK",
+    pill: "border-brand-teal/40 text-brand-teal bg-brand-mint/30",
+    tone: "accent",
+  },
+  price_drop: {
+    label: "PRICE",
+    pill: "border-brand-pink/40 text-brand-pink bg-brand-pink/10",
+    tone: "muted",
+  },
+};
+
+const ALERT_KINDS = Object.keys(TIER_META);
+
 export default function AlertHistory({ events }: { events: Event[] }) {
-  const oosEvents = events.filter((e) => e.kind === "oos_detected");
+  const alerts = events.filter((e) => ALERT_KINDS.includes(e.kind));
 
   return (
     <section className="rounded-clay bg-panel border border-hairline shadow-clay overflow-hidden">
@@ -27,23 +55,26 @@ export default function AlertHistory({ events }: { events: Event[] }) {
           </h2>
         </div>
         <span className="text-xs text-muted px-3 py-1 rounded-full bg-canvas border border-hairline">
-          {oosEvents.length} OOS alerts
+          {alerts.length} alerts
         </span>
       </div>
-      {!oosEvents.length ? (
+      {!alerts.length ? (
         <div className="px-5 py-8 text-center text-muted text-sm">
-          No OOS alerts yet. When a competitor goes out of stock, Slack
-          alerts appear here.
+          No alerts yet. OOS, restock, low-stock, and price-drop alerts will
+          land here.
         </div>
       ) : (
         <ul className="divide-y divide-border max-h-72 overflow-y-auto">
-          {oosEvents.map((e) => {
+          {alerts.map((e) => {
             const slackOk = parseSlack(e.payload);
+            const meta = TIER_META[e.kind] || TIER_META.oos_detected;
             return (
               <li key={e.id} className="px-5 py-3 text-sm">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] uppercase font-semibold tracking-wider px-1.5 py-0.5 rounded border border-danger/40 text-danger bg-danger/10">
-                    OOS
+                  <span
+                    className={`text-[10px] uppercase font-semibold tracking-wider px-1.5 py-0.5 rounded border ${meta.pill}`}
+                  >
+                    {meta.label}
                   </span>
                   <span className="text-xs text-muted">
                     {timeAgo(e.created_at)}

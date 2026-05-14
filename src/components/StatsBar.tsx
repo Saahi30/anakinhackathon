@@ -28,7 +28,13 @@ const variantClass: Record<Variant, { bg: string; ink: string; sub: string }> = 
 export default function StatsBar({
   stats,
 }: {
-  stats: { total: number; oos: number; inStock: number; recentOos: number };
+  stats: {
+    total: number;
+    oos: number;
+    inStock: number;
+    recentOos: number;
+    lowStock?: number;
+  };
 }) {
   const cards: {
     label: string;
@@ -49,16 +55,16 @@ export default function StatsBar({
       hint: "Rivals available now",
     },
     {
+      label: "Low stock",
+      value: stats.lowStock || 0,
+      variant: "ochre",
+      hint: "Pre-OOS warning",
+    },
+    {
       label: "Out of stock",
       value: stats.oos,
       variant: "coral",
       hint: "Strike windows open",
-    },
-    {
-      label: "OOS captured",
-      value: stats.recentOos,
-      variant: "ochre",
-      hint: "Events this session",
     },
   ];
 
