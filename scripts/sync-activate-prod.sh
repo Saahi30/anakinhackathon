@@ -1,15 +1,10 @@
 #!/usr/bin/env bash
-# Mirror the latest `main` content to the `activate-prod` repo.
+# Mirror the latest `main` content to the secondary repo with local-only files removed.
 #
 # Usage:
 #   ./scripts/sync-activate-prod.sh ["optional commit message"]
 #
-# Workflow:
-#   - You commit & push to origin (anakinhackathon) as usual on `main`.
-#   - When you want to mirror the current state to activate-prod, run this.
-#   - It checks out the local `prod` branch (the v1..v5 base + prior syncs),
-#     overlays main's working tree, commits, and pushes to activate-prod.
-#   - Original repo (origin/anakinhackathon) is never touched.
+# Maintains a local `prod` branch that tracks the secondary repo's `main`.
 
 set -euo pipefail
 
@@ -29,6 +24,23 @@ trap cleanup EXIT
 
 git checkout prod
 git checkout main -- .
+
+# Strip files that should not exist on the secondary repo.
+rm -f scripts/sync-activate-prod.sh base_idea.md
+rmdir scripts 2>/dev/null || true
+
+# Apply text scrubs to neutralize project-history references.
+if [ -f README.md ]; then
+  sed -i 's/^Built for a hackathon — uses /Uses /' README.md
+fi
+if [ -f supabase/config.toml ]; then
+  sed -i 's/^project_id = "anakinhackathon"$/project_id = "stockstrike"/' supabase/config.toml
+fi
+for f in supabase/migrations/*.sql; do
+  [ -f "$f" ] || continue
+  sed -i 's/^-- Hackathon scope: server-side access via service role only\.$/-- Server-side access via service role only./' "$f"
+done
+
 git add -A
 
 if git diff --cached --quiet; then
@@ -38,4 +50,4 @@ fi
 
 git commit -m "$MSG"
 git push activate-prod prod:main
-echo "Synced. activate-prod main now matches origin/main content."
+echo "Synced."
